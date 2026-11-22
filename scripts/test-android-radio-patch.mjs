@@ -52,6 +52,34 @@ class AudioEngine {
 }
 `;
 fs.writeFileSync(path.join(fixture, "js", "audio-engine.js"), audio);
+const mediaSession = `import { state } from "./state.js";
+import { audioEngine } from "./audio-engine.js";
+
+export function initMediaSession() {
+  if (!("mediaSession" in navigator)) return;
+  const updateMetadata = (song) => {};
+  const registerAction = (action, handler) => {
+    try {
+      navigator.mediaSession.setActionHandler(action, handler);
+    } catch (e) {
+      console.debug(`Media Session action not supported: ${action}`);
+    }
+  };
+  state.subscribe("songChanged", (song) => updateMetadata(song));
+  state.subscribe("playbackStateChanged", (isPlaying) => {
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  });
+  state.subscribe("timeUpdate", ({ currentTime, duration }) => {
+    if ("setPositionState" in navigator.mediaSession && duration > 0 && currentTime <= duration) {
+      try { navigator.mediaSession.setPositionState({ duration, position: currentTime }); } catch (e) {}
+    }
+  });
+  if (state.currentSong) {
+    updateMetadata(state.currentSong);
+  }
+}
+`;
+fs.writeFileSync(path.join(fixture, "js", "media-session.js"), mediaSession);
 
 const patcher = path.resolve("scripts", "patch-android-radio.mjs");
 const first = spawnSync(process.execPath, [patcher, fixture], { encoding: "utf8" });
@@ -59,6 +87,9 @@ assert.equal(first.status, 0, first.stderr || first.stdout);
 const patched = fs.readFileSync(path.join(fixture, "js", "audio-engine.js"), "utf8");
 assert.ok(patched.includes("VIORA_ANDROID_RADIO_ADAPTER_V1"));
 assert.ok(patched.includes("androidRadioAdapter.isAndroidShell()"));
+const patchedMediaSession = fs.readFileSync(path.join(fixture, "js", "media-session.js"), "utf8");
+assert.ok(patchedMediaSession.includes("VIORA_ANDROID_RADIO_MEDIA_SESSION_V1"));
+assert.ok(patchedMediaSession.includes("viora-native-radio-mode"));
 assert.ok(fs.existsSync(path.join(fixture, "js", "android-radio-adapter.js")));
 assert.ok(fs.existsSync(path.join(fixture, "android-radio-patch-report.json")));
 
