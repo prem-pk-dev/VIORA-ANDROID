@@ -171,11 +171,18 @@ class RadioPlaybackService : MediaSessionService() {
         RadioPlaybackState.isPlaying = false
         RadioPlaybackState.isBuffering = false
         RadioPlaybackState.errorCode = ""
-        publishState()
+        val stopRequestId = RadioPlaybackState.pendingStopRequestId
+        RadioPlaybackState.pendingStopRequestId = ""
+        publishState(
+            if (stopRequestId.isNotBlank()) "radio.stopped" else "radio.state",
+            stopRequestId
+        )
     }
 
-    private fun publishState() {
-        RadioPlaybackState.eventSink?.invoke(RadioPlaybackState.toJson("radio.state").toString())
+    private fun publishState(type: String = "radio.state", requestId: String = "") {
+        val payload = RadioPlaybackState.toJson(type)
+        if (requestId.isNotBlank()) payload.put("requestId", requestId)
+        RadioPlaybackState.eventSink?.invoke(payload.toString())
     }
 
     override fun onDestroy() {
@@ -264,6 +271,7 @@ internal object RadioPlaybackState {
     @Volatile var errorCode: String = ""
     @Volatile var eventSink: ((String) -> Unit)? = null
     @Volatile var commandSink: ((Intent) -> Boolean)? = null
+    @Volatile var pendingStopRequestId: String = ""
 
     fun toJson(type: String): JSONObject = JSONObject()
         .put("version", 1)
