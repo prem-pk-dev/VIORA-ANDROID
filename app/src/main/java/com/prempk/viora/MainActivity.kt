@@ -14,7 +14,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.CookieManager
 import androidx.webkit.WebViewAssetLoader
+import androidx.core.view.WindowCompat
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -32,11 +34,15 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         window.statusBarColor = Color.rgb(5, 7, 20)
         window.navigationBarColor = Color.rgb(5, 7, 20)
 
         webView = WebView(this)
+        webView.setBackgroundColor(Color.rgb(5, 7, 20))
         setContentView(webView)
+        CookieManager.getInstance().setAcceptCookie(true)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
         with(webView.settings) {
             javaScriptEnabled = true
@@ -85,7 +91,7 @@ class MainActivity : Activity() {
                 request: WebResourceRequest?
             ): WebResourceResponse? {
                 if (request == null) return null
-                proxyApiRequest(request)?.let { return it }
+                VioraApiProxy.handle(request)?.let { return it }
                 return assetLoader.shouldInterceptRequest(request.url)
             }
 
@@ -107,7 +113,7 @@ class MainActivity : Activity() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
             ServiceWorkerController.getInstance().serviceWorkerClient = object : ServiceWorkerClient() {
                 override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
-                    proxyApiRequest(request)?.let { return it }
+                    VioraApiProxy.handle(request)?.let { return it }
                     return assetLoader.shouldInterceptRequest(request.url)
                 }
             }
@@ -120,64 +126,6 @@ class MainActivity : Activity() {
         } else {
             webView.restoreState(savedInstanceState)
         }
-    }
-
-    private fun proxyApiRequest(request: WebResourceRequest): WebResourceResponse? {
-        val uri = request.url
-        if (uri.host != ASSET_HOST || !(uri.path ?: "").startsWith("/api/")) return null
-
-        val apiBase = BuildConfig.VIORA_API_BASE_URL.trimEnd('/')
-        if (apiBase.isBlank()) {
-            return jsonResponse(503, "VIORA_API_BASE_URL is not configured")
-        }
-        if (request.method != "GET" && request.method != "OPTIONS") {
-            return jsonResponse(405, "Method not supported by the Android API proxy")
-        }
-
-        return try {
-            val target = apiBase + uri.encodedPath +
-                (uri.encodedQuery?.let { "?$it" } ?: "")
-            val connection = (URL(target).openConnection() as HttpURLConnection).apply {
-                requestMethod = request.method
-                connectTimeout = 12000
-                readTimeout = 20000
-                instanceFollowRedirects = true
-                setRequestProperty("Accept", "application/json")
-            }
-            val status = connection.responseCode
-            val stream = if (status >= 400) connection.errorStream else connection.inputStream
-            val contentType = connection.contentType ?: "application/json"
-            val mimeType = contentType.substringBefore(';').trim().ifBlank { "application/json" }
-            val charset = Regex("charset=([^;]+)", RegexOption.IGNORE_CASE)
-                .find(contentType)?.groupValues?.getOrNull(1)?.trim() ?: "UTF-8"
-            val headers = connection.headerFields
-                .filterKeys { key -> key != null && !key.equals("Transfer-Encoding", true) }
-                .mapKeys { it.key!! }
-                .mapValues { it.value.joinToString(",") }
-            val body = stream ?: ByteArrayInputStream(ByteArray(0))
-            WebResourceResponse(
-                mimeType,
-                charset,
-                status,
-                connection.responseMessage ?: "OK",
-                headers,
-                body
-            )
-        } catch (error: Exception) {
-            jsonResponse(502, "VIORA API request failed: ${error.javaClass.simpleName}")
-        }
-    }
-
-    private fun jsonResponse(status: Int, message: String): WebResourceResponse {
-        val body = """{"error":"${message.replace("\"", "'")}"}"""
-        return WebResourceResponse(
-            "application/json",
-            "UTF-8",
-            status,
-            if (status == 503) "Service Unavailable" else "Bad Gateway",
-            mapOf("Cache-Control" to "no-store"),
-            ByteArrayInputStream(body.toByteArray(Charsets.UTF_8))
-        )
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
