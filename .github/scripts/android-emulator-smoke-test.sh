@@ -42,7 +42,7 @@ fi
 CRASHES="$(adb logcat -d -v brief | grep -E "FATAL EXCEPTION|Process: com\\.prempk\\.viora|ANR in com\\.prempk\\.viora" || true)"
 if [ -n "$CRASHES" ]; then
   echo "::error::Android runtime crash/ANR detected for VIORA."
-  printf '%s\\n' "$CRASHES"
+  printf '%s\n' "$CRASHES"
   exit 1
 fi
 
