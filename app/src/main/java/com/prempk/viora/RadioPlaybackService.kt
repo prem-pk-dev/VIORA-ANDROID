@@ -103,7 +103,7 @@ class RadioPlaybackService : MediaSessionService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val serviceStartResult = super.onStartCommand(intent, flags, startId)
         val action = intent?.action
-        if (action in INTERNAL_COMMAND_ACTIONS && !isTrustedInternalCommand(intent)) {
+        if (action != null && action in INTERNAL_COMMAND_ACTIONS && !isTrustedInternalCommand(intent)) {
             // The service is exported for MediaSession controllers, but app-private
             // start commands must carry a token stored in VIORA's private preferences.
             return serviceStartResult
