@@ -12,6 +12,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.json.JSONObject
+import java.security.MessageDigest
+import java.util.UUID
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class RadioPlaybackService : MediaSessionService() {
@@ -100,7 +102,13 @@ class RadioPlaybackService : MediaSessionService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val serviceStartResult = super.onStartCommand(intent, flags, startId)
-        when (intent?.action) {
+        val action = intent?.action
+        if (action in INTERNAL_COMMAND_ACTIONS && !isTrustedInternalCommand(intent)) {
+            // The service is exported for MediaSession controllers, but app-private
+            // start commands must carry a token stored in VIORA's private preferences.
+            return serviceStartResult
+        }
+        when (action) {
             ACTION_PLAY -> playStation(
                 intent.getStringExtra(EXTRA_STATION_ID).orEmpty(),
                 intent.getStringExtra(EXTRA_STREAM_URL).orEmpty(),
@@ -275,6 +283,12 @@ class RadioPlaybackService : MediaSessionService() {
         const val EXTRA_VOLUME = "volume"
 
         private const val PREFS_NAME = "viora_native_radio"
+        private const val COMMAND_PREFS_NAME = "viora_internal_commands"
+        private const val COMMAND_TOKEN_KEY = "commandToken"
+        private const val EXTRA_INTERNAL_TOKEN = "internalToken"
+        private val INTERNAL_COMMAND_ACTIONS = setOf(
+            ACTION_PLAY, ACTION_PAUSE, ACTION_RESUME, ACTION_STOP, ACTION_VOLUME
+        )
         private const val PREF_STATION_ID = "stationId"
         private const val PREF_STREAM_URL = "streamUrl"
         private const val PREF_TITLE = "title"
@@ -299,6 +313,25 @@ class RadioPlaybackService : MediaSessionService() {
 
         fun isApprovedStation(stationId: String, streamUrl: String): Boolean =
             APPROVED_STREAMS[stationId] == streamUrl
+
+        @Synchronized
+        private fun internalCommandToken(context: Context): String {
+            val prefs = context.getSharedPreferences(COMMAND_PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.getString(COMMAND_TOKEN_KEY, null)?.let { if (it.isNotBlank()) return it }
+            val token = UUID.randomUUID().toString()
+            prefs.edit().putString(COMMAND_TOKEN_KEY, token).apply()
+            return token
+        }
+
+        private fun isTrustedInternalCommand(intent: Intent?): Boolean {
+            val supplied = intent?.getStringExtra(EXTRA_INTERNAL_TOKEN).orEmpty()
+            if (supplied.isBlank()) return false
+            val expected = internalCommandToken(this)
+            return MessageDigest.isEqual(
+                supplied.toByteArray(Charsets.UTF_8),
+                expected.toByteArray(Charsets.UTF_8)
+            )
+        }
 
         fun restoreSnapshot(context: Context) {
             if (RadioPlaybackState.stationId.isNotBlank()) return
@@ -332,6 +365,7 @@ class RadioPlaybackService : MediaSessionService() {
                 putExtra(EXTRA_ARTIST, artist)
                 putExtra(EXTRA_ARTWORK, artwork)
                 putExtra(EXTRA_BITRATE, bitrate)
+                putExtra(EXTRA_INTERNAL_TOKEN, internalCommandToken(context))
             }
             if (RadioPlaybackState.commandSink?.invoke(intent) != true) {
                 ContextCompat.startForegroundService(context, intent)
@@ -340,6 +374,7 @@ class RadioPlaybackService : MediaSessionService() {
 
         fun dispatch(context: Context, action: String, volume: Float? = null) {
             val intent = Intent(context, RadioPlaybackService::class.java).setAction(action)
+                .putExtra(EXTRA_INTERNAL_TOKEN, internalCommandToken(context))
             if (volume != null) intent.putExtra(EXTRA_VOLUME, volume.coerceIn(0f, 1f))
             if (RadioPlaybackState.commandSink?.invoke(intent) == true) return
             // Do not create a service merely to control an idle player.
