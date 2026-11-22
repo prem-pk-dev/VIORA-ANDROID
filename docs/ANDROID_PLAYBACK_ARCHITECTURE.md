@@ -133,8 +133,22 @@ No event is allowed to invoke `playRadio()` or mutate the PWA queue. It updates 
 - Native player volume follows the PWA volume/mute state; no independent Android-only volume slider is introduced.
 - On Activity/WebView recreation, request the native snapshot. Never store an Activity or WebView reference in the service.
 
-### Remaining implementation gates
-Before coding the service, confirm the exact Media3 1.11.1 API signatures for session command filtering, custom player commands, metadata artwork loading, and player error propagation. Add the dependency set consistently (`media3-exoplayer`, `media3-session`, and `media3-common`, all at the same version). Keep all service manifest declarations limited to the media playback foreground-service type and required permissions. No notification permission prompt should be added without checking the Android version-specific policy.
+### Media3 API decisions verified against current Android documentation
+
+- Use Media3 **1.11.1** consistently for `media3-exoplayer`, `media3-session`, and `media3-common`. Do not mix versions.
+- The service owns one `ExoPlayer` and one `MediaSession`, created in `MediaSessionService.onCreate()`, released in `onDestroy()`, and returned by `onGetSession()`.
+- Use the MediaSession callback's connection result to restrict external controller capabilities. For the initial radio POC, retain play/pause and remove player commands for seeking, changing media items, and next/previous navigation. Verify both Android System UI and Bluetooth/headset controllers receive only the intended command set.
+- The official Media3 example demonstrates filtering a controller's available player commands by building on the connection result and removing specific `Player.COMMAND_*` entries. Use the API supported by the pinned 1.11.1 version and do not copy an unstable/deprecated callback signature blindly.
+- Declare `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, and the service with `android:foregroundServiceType="mediaPlayback"` and the Media3 session service action. The service must be started by a user-initiated radio play action, not automatically at app launch.
+- Keep artwork metadata as a validated HTTPS URI; failure to load artwork must not block audio playback. Error reporting to the UI uses bounded error codes, not raw exception messages or stream URLs.
+- The installed WebView runtime must report `WEB_MESSAGE_LISTENER` support before the origin-scoped listener is registered. The exact `https://appassets.androidplatform.net` origin rule and `isMainFrame` check remain mandatory.
+
+Official references:
+- [Media3 background playback](https://developer.android.com/media/media3/session/background-playback)
+- [Media3 player app implementation](https://developer.android.com/media/implement/playback-app)
+- [MediaSession callback and command filtering](https://developer.android.com/reference/kotlin/androidx/media3/session/MediaSession.Callback)
+- [AndroidX WebViewCompat.addWebMessageListener](https://developer.android.com/reference/androidx/webkit/WebViewCompat)
+
 
 ## JavaScript ↔ native command contract
 
