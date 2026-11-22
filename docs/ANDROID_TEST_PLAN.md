@@ -49,3 +49,10 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] No mixed-content or JavaScript bridge security warnings.
 - [ ] App survives rotation, process recreation, and low-memory resume.
 - [ ] No crash or ANR during long playback, large local imports, or route switching.
+
+
+## Additional source-contract note — 22 November 2026
+
+- Current PWA playback routing was rechecked in `js/audio-engine.js`: YouTube IFrame, live radio, and local/custom tracks have explicit playback paths. A generic direct-remote-audio playback path was not found; do not count that as an existing working feature or use it as the first production integration target without a separate product decision.
+- Local audio bytes live in IndexedDB (`MusiqLibraryDB` / `audioBlobs`); the WebView creates temporary Blob URLs for playback. Local metadata in localStorage alone is not enough to restore the audio bytes in a native service.
+- Native playback work remains unimplemented. No Media3 service, native controls, or background-playback behavior is considered tested.
