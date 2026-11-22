@@ -23,6 +23,7 @@ import androidx.core.view.WindowInsetsCompat
 class MainActivity : Activity() {
     private lateinit var webView: WebView
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
+    private var radioBridge: RadioBridge? = null
 
     private val assetLoader by lazy {
         WebViewAssetLoader.Builder()
@@ -43,6 +44,9 @@ class MainActivity : Activity() {
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
 
         webView = WebView(this)
+        // Privileged radio commands are exposed only through an origin-scoped WebMessageListener.
+        // If the installed WebView lacks this feature, the Android radio adapter remains disabled.
+        radioBridge = RadioBridge(this, webView).also { it.install() }
         webView.setBackgroundColor(Color.rgb(5, 7, 20))
         ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
             val safeInsets = windowInsets.getInsets(
@@ -177,6 +181,8 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         pendingFileCallback?.onReceiveValue(null)
         pendingFileCallback = null
+        radioBridge?.close()
+        radioBridge = null
         if (::webView.isInitialized) {
             webView.stopLoading()
             webView.destroy()
