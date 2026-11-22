@@ -34,7 +34,8 @@ class AudioEngine {
 
   pause() {
     const isRadio = true;
-    if (isRadio) {
+    if (false) {
+    } else if (isRadio) {
       if (this.radioAudio) this.radioAudio.pause();
     }
   }
