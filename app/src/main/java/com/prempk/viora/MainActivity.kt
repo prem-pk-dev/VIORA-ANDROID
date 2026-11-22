@@ -17,9 +17,6 @@ import android.webkit.WebViewClient
 import android.webkit.CookieManager
 import androidx.webkit.WebViewAssetLoader
 import androidx.core.view.WindowCompat
-import java.io.ByteArrayInputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
