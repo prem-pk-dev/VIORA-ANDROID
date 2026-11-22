@@ -111,7 +111,17 @@ internal class RadioBridge(
                 }
                 "radio.pause" -> RadioPlaybackService.dispatch(context, RadioPlaybackService.ACTION_PAUSE)
                 "radio.resume" -> RadioPlaybackService.dispatch(context, RadioPlaybackService.ACTION_RESUME)
-                "radio.stop" -> RadioPlaybackService.dispatch(context, RadioPlaybackService.ACTION_STOP)
+                "radio.stop" -> {
+                    if (RadioPlaybackState.stationId.isBlank()) {
+                        RadioPlaybackService.dispatch(context, RadioPlaybackService.ACTION_STOP)
+                    } else {
+                        RadioPlaybackState.pendingStopRequestId = requestId
+                        RadioPlaybackService.dispatch(context, RadioPlaybackService.ACTION_STOP)
+                        // The service replies with radio.stopped only after its player is cleared.
+                        if (RadioPlaybackState.stationId.isBlank()) return
+                        return
+                    }
+                }
                 "radio.setVolume" -> {
                     val volume = request.getDouble("volume")
                     if (!volume.isFinite() || volume !in 0.0..1.0) {
