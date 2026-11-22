@@ -70,7 +70,22 @@ Current exposed effect state includes ten `eqBands`, `preamp`, `bassBoost`, `ste
 
 ### Safe first integration decision
 
-There is no verified existing direct-remote-audio source to route into Media3. Therefore, the next implementation gate is **not** adding a Media3 player or foreground service. First create a deterministic Android-only adapter design with exact generated-bundle patch anchors, a versioned message schema, and an explicit source capability check. The first proof of concept must use a genuine existing source only if its durable source data can be provided safely; otherwise it must be clearly test-only and must not be presented as a completed VIORA playback feature.
+There is no verified existing generic direct-remote-audio source to route into Media3. However, a genuine existing source is available for a narrow proof of concept: **live radio**.
+
+- `AudioEngine.playRadio(station)` builds a real radio track descriptor containing station ID, name, genre, artwork, `streamUrl`, bitrate and live metadata, then plays it through the separate `radioAudio` HTMLAudio element.
+- The current radio path is separate from the standard `htmlAudio` Web Audio processing graph. Moving radio to Media3 would therefore not remove the existing ten-band EQ from standard/local tracks; radio currently does not use that graph in the inspected code.
+- Radio is explicitly live/non-seekable. The existing app's next/previous radio behavior selects the adjacent station from `state.radioStations` and calls `playRadio()`.
+- This makes radio the safest genuine source candidate for a limited native POC, ahead of local music or YouTube. It does not prove stream availability or background behavior; those require actual runtime tests.
+
+Proposed POC scope (not yet implemented):
+1. Start one selected existing radio station through a native Media3 `MediaSessionService`; do not start `radioAudio` for that station.
+2. Synchronize station metadata and play/pause state with the WebView through the origin-scoped bridge.
+3. Verify foreground playback, screen-off playback, notification/lock-screen play-pause, audio focus, headphone unplug, service restart, and Activity/WebView recreation.
+4. Keep station next/previous disabled in the native session for this first spike unless the full station catalogue and action synchronization are implemented.
+5. Keep YouTube and local/custom tracks entirely on their existing WebView paths during this isolated POC; enforce mutual exclusion so no two audio owners play simultaneously.
+6. Define rollback to the existing WebView radio path before rollout.
+
+This radio POC is a scoped native enhancement to an existing source, not a claim that all VIORA playback has migrated. Do not add a generic remote-audio source, local Blob migration, YouTube native playback, or native EQ in the same change.
 
 ## Bridge security decision
 
