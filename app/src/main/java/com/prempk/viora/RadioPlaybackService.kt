@@ -20,10 +20,11 @@ class RadioPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        player = ExoPlayer.Builder(this).build()
         // Let ExoPlayer manage Android audio focus and pause on headphone disconnect.
-        player.setAudioAttributes(AudioAttributes.DEFAULT, true)
-        player.setHandleAudioBecomingNoisy(true)
+        player = ExoPlayer.Builder(this)
+            .setAudioAttributes(AudioAttributes.DEFAULT, true)
+            .setHandleAudioBecomingNoisy(true)
+            .build()
         RadioPlaybackState.commandSink = { intent ->
             when (intent.action) {
                 ACTION_PLAY -> {
@@ -77,6 +78,7 @@ class RadioPlaybackService : MediaSessionService() {
                         .add(Player.COMMAND_PLAY_PAUSE)
                         .add(Player.COMMAND_GET_CURRENT_MEDIA_ITEM)
                         .add(Player.COMMAND_GET_METADATA)
+                        .add(Player.COMMAND_GET_TIMELINE)
                         .build()
                     return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                         .setAvailablePlayerCommands(commands)
