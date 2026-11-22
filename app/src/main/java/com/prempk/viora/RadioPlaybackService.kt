@@ -39,7 +39,11 @@ class RadioPlaybackService : MediaSessionService() {
                     true
                 }
                 ACTION_PAUSE -> { player.pause(); true }
-                ACTION_RESUME -> { if (player.mediaItemCount > 0) player.play(); true }
+                ACTION_RESUME -> {
+                    if (player.mediaItemCount == 0) restoreSavedStationToPlayer()
+                    if (player.mediaItemCount > 0) player.play()
+                    true
+                }
                 ACTION_STOP -> { stopAndClear(); true }
                 ACTION_VOLUME -> {
                     player.volume = intent.getFloatExtra(EXTRA_VOLUME, 1f).coerceIn(0f, 1f)
@@ -67,6 +71,7 @@ class RadioPlaybackService : MediaSessionService() {
                 publishState()
             }
         })
+        restoreSavedStationToPlayer()
         mediaSession = MediaSession.Builder(this, player)
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(
@@ -102,7 +107,10 @@ class RadioPlaybackService : MediaSessionService() {
                 intent.getStringExtra(EXTRA_BITRATE).orEmpty()
             )
             ACTION_PAUSE -> if (::player.isInitialized) player.pause()
-            ACTION_RESUME -> if (::player.isInitialized && player.mediaItemCount > 0) player.play()
+            ACTION_RESUME -> if (::player.isInitialized) {
+                if (player.mediaItemCount == 0) restoreSavedStationToPlayer()
+                if (player.mediaItemCount > 0) player.play()
+            }
             ACTION_STOP -> stopAndClear()
             ACTION_VOLUME -> if (::player.isInitialized) {
                 player.volume = (intent.getFloatExtra(EXTRA_VOLUME, 1f)).coerceIn(0f, 1f)
@@ -111,6 +119,68 @@ class RadioPlaybackService : MediaSessionService() {
             }
         }
         return serviceStartResult
+    }
+
+    private fun createMediaItem(
+        stationId: String,
+        streamUrl: String,
+        title: String,
+        artist: String,
+        artwork: String
+    ): MediaItem {
+        val metadata = MediaMetadata.Builder()
+            .setTitle(title)
+            .setArtist(artist)
+            .setAlbumTitle("VIORA • Live Radio")
+            .setIsBrowsable(false)
+            .setIsPlayable(true)
+            .apply { if (artwork.isNotBlank()) setArtworkUri(Uri.parse(artwork)) }
+            .build()
+        return MediaItem.Builder()
+            .setMediaId(stationId)
+            .setUri(Uri.parse(streamUrl))
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    private fun restoreSavedStationToPlayer() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val stationId = prefs.getString(PREF_STATION_ID, "").orEmpty()
+        val streamUrl = prefs.getString(PREF_STREAM_URL, "").orEmpty()
+        if (!isApprovedStation(stationId, streamUrl)) return
+        val title = prefs.getString(PREF_TITLE, "").orEmpty()
+        val artist = prefs.getString(PREF_ARTIST, "").orEmpty()
+        val artwork = prefs.getString(PREF_ARTWORK, "").orEmpty()
+        val bitrate = prefs.getString(PREF_BITRATE, "").orEmpty()
+        if (title.isBlank() || title.length > 120 || artist.length > 120 ||
+            (artwork.isNotBlank() && !artwork.startsWith("https://images.unsplash.com/"))
+        ) return
+        RadioPlaybackState.stationId = stationId
+        RadioPlaybackState.title = title
+        RadioPlaybackState.artist = artist
+        RadioPlaybackState.artwork = artwork
+        RadioPlaybackState.bitrate = bitrate
+        if (player.mediaItemCount == 0) {
+            player.setMediaItem(createMediaItem(stationId, streamUrl, title, artist, artwork))
+        }
+    }
+
+    private fun saveStation(
+        stationId: String,
+        streamUrl: String,
+        title: String,
+        artist: String,
+        artwork: String,
+        bitrate: String
+    ) {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+            .putString(PREF_STATION_ID, stationId)
+            .putString(PREF_STREAM_URL, streamUrl)
+            .putString(PREF_TITLE, title)
+            .putString(PREF_ARTIST, artist)
+            .putString(PREF_ARTWORK, artwork)
+            .putString(PREF_BITRATE, bitrate)
+            .apply()
     }
 
     private fun playStation(
@@ -140,20 +210,8 @@ class RadioPlaybackService : MediaSessionService() {
         RadioPlaybackState.errorCode = ""
         RadioPlaybackState.isBuffering = true
         RadioPlaybackState.isPlaying = false
-        val metadata = MediaMetadata.Builder()
-            .setTitle(title)
-            .setArtist(artist)
-            .setAlbumTitle("VIORA • Live Radio")
-            .setIsBrowsable(false)
-            .setIsPlayable(true)
-            .apply { if (artwork.isNotBlank()) setArtworkUri(Uri.parse(artwork)) }
-            .build()
-        val item = MediaItem.Builder()
-            .setMediaId(stationId)
-            .setUri(Uri.parse(streamUrl))
-            .setMediaMetadata(metadata)
-            .build()
-        player.setMediaItem(item)
+        saveStation(stationId, streamUrl, title, artist, artwork, bitrate)
+        player.setMediaItem(createMediaItem(stationId, streamUrl, title, artist, artwork))
         player.prepare()
         player.play()
         publishState()
@@ -173,6 +231,7 @@ class RadioPlaybackService : MediaSessionService() {
         RadioPlaybackState.isPlaying = false
         RadioPlaybackState.isBuffering = false
         RadioPlaybackState.errorCode = ""
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
         val stopRequestId = RadioPlaybackState.pendingStopRequestId
         RadioPlaybackState.pendingStopRequestId = ""
         publishState(
@@ -209,6 +268,14 @@ class RadioPlaybackService : MediaSessionService() {
         const val EXTRA_BITRATE = "bitrate"
         const val EXTRA_VOLUME = "volume"
 
+        private const val PREFS_NAME = "viora_native_radio"
+        private const val PREF_STATION_ID = "stationId"
+        private const val PREF_STREAM_URL = "streamUrl"
+        private const val PREF_TITLE = "title"
+        private const val PREF_ARTIST = "artist"
+        private const val PREF_ARTWORK = "artwork"
+        private const val PREF_BITRATE = "bitrate"
+
         private val APPROVED_STREAMS = mapOf(
             "rad-1" to "https://drive.uber.radio/uber/bollywoodnow/icecast.audio",
             "rad-2" to "https://drive.uber.radio/uber/bollywoodlove/icecast.audio",
@@ -226,6 +293,21 @@ class RadioPlaybackService : MediaSessionService() {
 
         fun isApprovedStation(stationId: String, streamUrl: String): Boolean =
             APPROVED_STREAMS[stationId] == streamUrl
+
+        fun restoreSnapshot(context: Context) {
+            if (RadioPlaybackState.stationId.isNotBlank()) return
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val stationId = prefs.getString(PREF_STATION_ID, "").orEmpty()
+            val streamUrl = prefs.getString(PREF_STREAM_URL, "").orEmpty()
+            if (!isApprovedStation(stationId, streamUrl)) return
+            RadioPlaybackState.stationId = stationId
+            RadioPlaybackState.title = prefs.getString(PREF_TITLE, "").orEmpty()
+            RadioPlaybackState.artist = prefs.getString(PREF_ARTIST, "").orEmpty()
+            RadioPlaybackState.artwork = prefs.getString(PREF_ARTWORK, "").orEmpty()
+            RadioPlaybackState.bitrate = prefs.getString(PREF_BITRATE, "").orEmpty()
+            RadioPlaybackState.isPlaying = false
+            RadioPlaybackState.isBuffering = false
+        }
 
         fun startPlay(
             context: Context,
