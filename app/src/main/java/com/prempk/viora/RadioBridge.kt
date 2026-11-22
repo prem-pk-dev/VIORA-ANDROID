@@ -35,7 +35,11 @@ internal class RadioBridge(
         }
 
         RadioPlaybackState.eventSink = { payload ->
-            replyProxy?.postMessage(payload)
+            try {
+                replyProxy?.postMessage(payload)
+            } catch (_: Exception) {
+                replyProxy = null
+            }
         }
         return true
     }
