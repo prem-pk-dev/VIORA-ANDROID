@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.ContextCompat
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -20,6 +21,9 @@ class RadioPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         player = ExoPlayer.Builder(this).build()
+        // Let ExoPlayer manage Android audio focus and pause on headphone disconnect.
+        player.setAudioAttributes(AudioAttributes.DEFAULT, true)
+        player.setHandleAudioBecomingNoisy(true)
         RadioPlaybackState.commandSink = { intent ->
             when (intent.action) {
                 ACTION_PLAY -> {
