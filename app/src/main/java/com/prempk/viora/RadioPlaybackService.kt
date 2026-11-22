@@ -1,5 +1,6 @@
 package com.prempk.viora
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -77,7 +78,16 @@ class RadioPlaybackService : MediaSessionService() {
             }
         })
         restoreSavedStationToPlayer()
+        val sessionActivity = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         mediaSession = MediaSession.Builder(this, player)
+            .setSessionActivity(sessionActivity)
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(
                     session: MediaSession,
