@@ -43,13 +43,34 @@ The existing PWA media-session.js registers browser Media Session actions and ca
 
 | Source type | Playback owner | Notes |
 | --- | --- | --- |
-| Direct remote audio track | Media3 service | Standard stream/file URL; native queue and seek |
+| Direct remote audio track | Not currently a verified PWA source | Future capability only; do not use as a production POC or claim it preserves an existing feature |
 | Live radio | Media3 service | Live metadata; no arbitrary seek; station next/previous |
 | New Android local import | Media3 service | Persisted SAF content:// URI permission; native metadata |
 | Existing PWA IndexedDB/Blob local track | Not yet decided | Requires a safe migration/adapter; a Blob URL cannot simply be passed to a service |
 | YouTube IFrame track/video | WebView YouTube player | Keep existing player; do not create a second native audio copy |
 
 Do not route a source to Media3 until its URL/URI, metadata, duration/live status, identity, and permission lifetime are known. If a source cannot be resolved safely, report a controlled unsupported/error state; do not start a second fallback player behind the user's back.
+
+## Verified JavaScript source and command mapping — 22 November 2026
+
+This mapping is based on read-only inspection of the current PWA `js/audio-engine.js`, `js/state.js`, `js/media-session.js`, `js/local-library.js`, and `js/storage.js`:
+
+| PWA behavior | Existing owner / API | Integration requirement |
+| --- | --- | --- |
+| YouTube track | `youtubePlayer` / IFrame; recognized by `source === "youtube"`, `id` prefix `youtube:`, or `youtubeId` | Keep in WebView. Before starting it, stop any native Media3 item; do not duplicate it natively. |
+| Live radio | `AudioEngine.radioAudio`; `playRadio(station)` sets `state.currentSong`, `state.currentStation`, `state.isStream` | Has `streamUrl`, station ID/name/artwork/genre; radio is live and not arbitrarily seekable. Existing radio element is separate from the standard Web Audio source graph. |
+| Local/custom audio | `AudioEngine.htmlAudio`; track may contain `blobUrl`; bytes in IndexedDB `MusiqLibraryDB` / `audioBlobs` | Not native-service-ready. A temporary Blob URL is not a persistent URI; keep this path in WebView until a safe URI migration exists. |
+| Other/non-YouTube/non-radio item | Falls through to local/custom branch only when blob/local markers exist; otherwise no generic direct URL playback branch was found | Treat unknown descriptors as unsupported. Do not guess a URL field or invent a Media3 source. |
+
+Existing Web Media Session handlers call `audioEngine.play()`, `pause()`, `nextTrack()`, `prevTrack()`, and `seek()`. `nextTrack()` and `prevTrack()` contain queue and radio-station logic; `prevTrack()` restarts the current non-radio item when position is over three seconds. The Media Session previous action intentionally has separate previous-item behavior. Preserve this distinction in any Android command mapping.
+
+The current queue state is `state.queue` plus `state.queueIndex`; `setQueue()` persists `queueData`, `queueIndex`, and ID list, then emits `queueChanged`. `songChanged`, `playbackStateChanged`, and `timeUpdate` are used by the existing UI and Media Session. Native-to-WebView synchronization must not silently mutate queue order or trigger a second `play()` call when reflecting a native event.
+
+Current exposed effect state includes ten `eqBands`, `preamp`, `bassBoost`, `stereoWiden`, and `reverb`; the inspected Web Audio graph also has treble shaping, stereo panner, compressor, master gain and analyser. Do not equate the UI setting `stereoWiden` with a native pan control without checking the actual setter implementation. Native effects require an explicit per-control mapping and parity measurements.
+
+### Safe first integration decision
+
+There is no verified existing direct-remote-audio source to route into Media3. Therefore, the next implementation gate is **not** adding a Media3 player or foreground service. First create a deterministic Android-only adapter design with exact generated-bundle patch anchors, a versioned message schema, and an explicit source capability check. The first proof of concept must use a genuine existing source only if its durable source data can be provided safely; otherwise it must be clearly test-only and must not be presented as a completed VIORA playback feature.
 
 ## JavaScript ↔ native command contract
 
