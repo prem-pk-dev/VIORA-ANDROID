@@ -57,6 +57,10 @@ jobs:
             echo "::error::Android radio adapter marker missing from generated PWA bundle."
             exit 1
           fi
+          if ! grep -Rqs "viora-native-radio-mode" dist/assets; then
+            echo "::error::Native/Web MediaSession ownership handoff missing from generated PWA bundle."
+            exit 1
+          fi
 
       - name: Restore the PWA root-level motion script into Vite output
         shell: bash
