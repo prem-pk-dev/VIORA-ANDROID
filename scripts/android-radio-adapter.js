@@ -183,7 +183,7 @@ export const androidRadioAdapter = {
   },
 
   async pause() {
-    if (!this.isActive()) return false;
+    if (!isAndroidShell()) return false;
     const response = await send("radio.pause");
     if (response.ok) {
       state.isPlaying = false;
