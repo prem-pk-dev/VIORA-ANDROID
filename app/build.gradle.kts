@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.prempk.viora"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.prempk.viora"
