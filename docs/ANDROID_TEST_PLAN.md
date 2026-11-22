@@ -78,6 +78,15 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] Starting YouTube or local/custom audio stops native radio before existing PWA playback starts.
 - [ ] Selecting another radio station switches the single native stream without overlapping the previous one.
 
+## Media3 session command exposure tests
+
+- [ ] The native MediaSession has one ExoPlayer owner and is created/released with the MediaSessionService lifecycle.
+- [ ] Android System UI and Bluetooth/headset controllers can play and pause the live radio stream.
+- [ ] Native session does not expose seek, set-media-item, playlist mutation, next, or previous commands for the first radio POC.
+- [ ] Live stream metadata reports a live item with no fabricated finite duration; artwork failure does not block audio.
+- [ ] Service starts only after a user-initiated radio play command and declares only the required media-playback foreground-service type and permissions.
+- [ ] Service remains independent of Activity/WebView lifecycle and is released cleanly after playback is stopped.
+
 ## Native bridge security checks
 
 - [ ] Privileged playback commands are not added to the existing unrestricted `addJavascriptInterface` object.
