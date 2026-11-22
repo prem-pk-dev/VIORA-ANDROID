@@ -193,9 +193,9 @@ export const androidRadioAdapter = {
   },
 
   async resume() {
-    if (!this.isActive()) return false;
+    if (!isAndroidShell()) return false;
     const response = await send("radio.resume");
-    if (response.ok) {
+    if (response.ok && nativeRadioActive) {
       state.isPlaying = true;
       state.notify("playbackStateChanged", true);
     }
@@ -203,7 +203,7 @@ export const androidRadioAdapter = {
   },
 
   async stop() {
-    if (!this.isActive()) return true;
+    if (!isAndroidShell()) return true;
     const response = await send("radio.stop");
     if (!response.ok) return false;
     nativeRadioActive = false;
