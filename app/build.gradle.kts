@@ -3,10 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val vioraApiBaseUrl = providers.environmentVariable("VIORA_API_BASE_URL").orElse("").get()
-    .replace("\\", "\\\\")
-    .replace("\"", "\\\"")
-
 android {
     namespace = "com.prempk.viora"
     compileSdk = 35
@@ -17,8 +13,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-
-        buildConfigField("String", "VIORA_API_BASE_URL", "\"$vioraApiBaseUrl\"")
     }
 
     buildFeatures {
@@ -43,4 +37,5 @@ android {
 
 dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.core:core-ktx:1.15.0")
 }
