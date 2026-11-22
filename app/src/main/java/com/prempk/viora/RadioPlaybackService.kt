@@ -91,7 +91,7 @@ class RadioPlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession = mediaSession
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
+        val serviceStartResult = super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_PLAY -> playStation(
                 intent.getStringExtra(EXTRA_STATION_ID).orEmpty(),
@@ -110,7 +110,7 @@ class RadioPlaybackService : MediaSessionService() {
                 publishState()
             }
         }
-        return START_NOT_STICKY
+        return serviceStartResult
     }
 
     private fun playStation(
