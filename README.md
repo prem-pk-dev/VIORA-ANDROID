@@ -43,4 +43,12 @@ The workflow is manual-only so normal commits do not consume GitHub Actions minu
 
 ## Current status
 
-Initial Kotlin WebView shell, local asset loading, Android file picker, and native API adapters have been committed. The project still needs a successful cloud build, APK inspection, and real Android device testing. It is **not yet a verified complete APK**.
+- The Kotlin WebView shell, local asset loading, Android file picker, and native API adapters are committed.
+- A previous manual GitHub Actions build completed successfully (user-reported), and an earlier debug APK was statically inspected. That APK predates the latest workflow and Android 15 inset fixes; do not treat it as verification of the current source.
+- Workflow fixes for the missing immersive-motion script and Android-only service-worker precache filtering are committed but have not yet been verified in a new APK.
+- Android 15 edge-to-edge inset handling is committed but still needs emulator/device visual testing, including keyboard/IME behavior.
+- YouTube direct-HTML fallback currently has no continuation token when no secure YouTube Data API key is configured. Do not fabricate pagination tokens or embed an API key in the APK.
+- Native background playback, MediaSession, notification/lock-screen controls, audio focus, and headphone controls are not implemented or verified. Preserve the existing Web Audio / HTMLAudio / YouTube playback architecture; do not add a second independent player without a proven synchronization design.
+- The current test checklist is in [docs/ANDROID_TEST_PLAN.md](docs/ANDROID_TEST_PLAN.md).
+
+The current source is **not yet a verified complete APK**. Run one grouped manual build only after implementation changes are ready, then inspect the resulting artifact and test it on Android hardware. Keep all work within the user's ₹0 budget and keep the original PWA repository read-only.
