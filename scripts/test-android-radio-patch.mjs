@@ -26,7 +26,9 @@ class AudioEngine {
     const isRadio = state.isStream || (song && (song.source === "radio" || song.isLive));
 
     // If current song is not from YouTube,
-    if (isRadio) {
+    if (song?.source === "youtube") {
+      youtubePlayer.pause();
+    } else if (isRadio) {
       // 2. Live Radio Stream
       youtubePlayer.pause();
     }
