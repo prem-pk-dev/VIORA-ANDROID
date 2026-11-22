@@ -108,12 +108,12 @@ class MainActivity : Activity() {
 
         // Route service-worker API fetches through the same native proxy.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            ServiceWorkerController.getInstance().serviceWorkerClient = object : ServiceWorkerClient() {
+            ServiceWorkerController.getInstance().setServiceWorkerClient(object : ServiceWorkerClient() {
                 override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
                     VioraApiProxy.handle(request)?.let { return it }
                     return assetLoader.shouldInterceptRequest(request.url)
                 }
-            }
+            })
         }
 
         if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
