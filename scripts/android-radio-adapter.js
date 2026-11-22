@@ -29,7 +29,7 @@ function attachListener() {
     }
 
     if (message?.version !== 1) return;
-    if (message.type === "radio.state" || message.type === "radio.snapshot") {
+    if (message.type === "radio.state" || message.type === "radio.snapshot" || message.type === "radio.stopped") {
       applyNativeState(message);
     }
 
@@ -94,6 +94,10 @@ function applyNativeState(message) {
     }
   } else if (message.type === "radio.state") {
     nativeRadioActive = Boolean(message.stationId);
+  } else if (message.type === "radio.stopped") {
+    nativeRadioActive = false;
+    state.isStream = false;
+    state.isPlaying = false;
   }
 
   if (state.currentSong?.source === "radio") {
