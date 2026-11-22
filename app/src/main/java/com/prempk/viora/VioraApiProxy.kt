@@ -249,10 +249,6 @@ internal object VioraApiProxy {
             setOf(RegexOption.DOT_MATCHES_ALL)
         )
         val channelPattern = Regex(
-            """"ownerText":\\{"runs":\\[\\{"text":"([^"]+)""",
-            setOf(RegexOption.DOT_MATCHES_ALL)
-        )
-        val channelPattern = Regex(
             "\"ownerText\":\\{\\"runs\\":\\[\\{\\"text\\":\\"([^\\"]+)",
             setOf(RegexOption.DOT_MATCHES_ALL)
         )
