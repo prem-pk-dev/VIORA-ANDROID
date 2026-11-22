@@ -5,7 +5,16 @@ import { youtubePlayer } from "./youtube-player.js";
 const pending = new Map();
 let sequence = 0;
 let listening = false;
-let nativeRadioActive = false;
+let setNativeRadioActive(false);
+
+function setNativeRadioActive(active) {
+  const next = Boolean(active);
+  if (nativeRadioActive === next) return;
+  nativeRadioActive = next;
+  try {
+    window.dispatchEvent(new CustomEvent("viora-native-radio-mode", { detail: { active: next } }));
+  } catch (_) {}
+}
 
 function isAndroidShell() {
   try {
@@ -69,7 +78,7 @@ function send(command, fields = {}) {
 
 function applyNativeState(message) {
   if (message.type === "radio.snapshot") {
-    nativeRadioActive = Boolean(message.stationId);
+    setNativeRadioActive(Boolean(message.stationId));
     if (nativeRadioActive && state.currentSong?.source !== "radio") {
       const station = (state.radioStations || []).find((item) => item.id === message.stationId);
       if (station) {
@@ -94,9 +103,9 @@ function applyNativeState(message) {
       }
     }
   } else if (message.type === "radio.state") {
-    nativeRadioActive = Boolean(message.stationId);
+    setNativeRadioActive(Boolean(message.stationId));
   } else if (message.type === "radio.stopped") {
-    nativeRadioActive = false;
+    setNativeRadioActive(false);
     state.isStream = false;
     state.isPlaying = false;
   }
@@ -174,14 +183,14 @@ export const androidRadioAdapter = {
       bitrate: station.bitrate || "128 kbps"
     });
     if (!response.ok) {
-      nativeRadioActive = false;
+      setNativeRadioActive(false);
       state.isPlaying = false;
       state.notify("playbackStateChanged", false);
       showToast("Native radio service could not accept this station.", "error");
       return false;
     }
 
-    nativeRadioActive = true;
+    setNativeRadioActive(true);
     const volume = state.isMuted ? 0 : state.volume;
     await send("radio.setVolume", { volume });
     return true;
@@ -211,7 +220,7 @@ export const androidRadioAdapter = {
     if (!isAndroidShell()) return true;
     const response = await send("radio.stop");
     if (!response.ok) return false;
-    nativeRadioActive = false;
+    setNativeRadioActive(false);
     state.isPlaying = false;
     state.isStream = false;
     state.notify("playbackStateChanged", false);
