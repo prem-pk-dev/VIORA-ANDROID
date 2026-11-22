@@ -158,3 +158,20 @@ Each phase must have an explicit rollback path and acceptance evidence. Do not b
 ## Current decision
 
 This document defines a proposed direction, not a completed implementation. No Media3 dependency, service, manifest permission, JavaScript bridge command, or PWA source patch has been added as part of this architecture review. First implementation should be a small isolated Media3 proof of concept, only after the command/source contract and local-library strategy are finalized.
+
+
+## Source-contract verification update — 22 November 2026
+
+A fresh read-only inspection of the current PWA `js/audio-engine.js`, `js/state.js`, `js/storage.js`, `js/local-library.js`, and `js/media-session.js` found an important distinction that must be reflected in implementation planning:
+
+- The current `AudioEngine.play()` routing explicitly handles YouTube IFrame tracks, live radio, and local/custom tracks. The final fallback pauses the players and reports that no playable audio source is attached. A generic direct-remote-audio playback branch was **not found** in the inspected implementation. Therefore, “direct remote audio track” in the proposed routing table is a future source capability, not a verified existing PWA source. Do not build a Media3 route for it until a real source descriptor and UI path exist.
+- The active web state is an in-memory `state.currentSong`, `state.queue`, and `state.queueIndex`. Queue metadata is persisted to localStorage as `queueData`, `queueIndex`, and ID arrays; state notifications include `songChanged`, `queueChanged`, `playbackStateChanged`, and `timeUpdate`. This is the actual integration seam to map, not an assumed generic player API.
+- Local audio bytes are stored in IndexedDB database `MusiqLibraryDB`, object store `audioBlobs`, keyed by track ID. The PWA recreates transient Blob URLs from those blobs during playback. Persisted local metadata is separate from the audio bytes. A transient Blob URL is not a durable URI for a native service.
+- Radio has its own `radioAudio` element; standard/local HTMLAudio uses `htmlAudio`; YouTube has its own IFrame player. The existing browser Media Session handlers call `audioEngine.play/pause/nextTrack/prevTrack/seek` directly. A native integration must replace or adapt those action paths on Android rather than leave the browser and native players competing.
+- The inspected EQ state includes `eqBands`, `preamp`, `bassBoost`, `stereoWiden`, and `reverb`. Do not assume a native processor can reproduce every control exactly; first map each UI control to the actual Web Audio node/value and define measurable parity tests.
+
+### Consequence for the first Media3 proof of concept
+
+The proposed “one direct remote audio item” spike is not currently an end-to-end PWA feature path. Before integrating Media3, either (a) prove a narrowly scoped Android-only demo/test source with an explicit test-only UI and keep it out of the production feature claim, or (b) first define a genuine user-facing source type in the existing product requirements. Do not silently invent a new source type or label it as preserving an existing PWA feature. The safer current next step is to finish a source/command mapping and a generated-bundle adapter design, then choose a POC that can be tested without changing the PWA repository.
+
+This update is based on source inspection only. No PWA file, Android playback source, dependency, manifest permission, or APK was changed or built.
