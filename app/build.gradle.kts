@@ -15,6 +15,23 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        // Stable internal DEBUG key so successive CI APKs can update the same install.
+        // This key is for testing only; never use it for a production release.
+        create("vioraDebug") {
+            storeFile = file("viora-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("vioraDebug")
+        }
+    }
+
     buildFeatures {
         buildConfig = true
     }
