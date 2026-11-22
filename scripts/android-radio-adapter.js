@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import { showToast } from "./components.js";
+import { youtubePlayer } from "./youtube-player.js";
 
 const pending = new Map();
 let sequence = 0;
@@ -128,7 +129,7 @@ export const androidRadioAdapter = {
     }
 
     // Release all WebView-owned audio before requesting native ownership.
-    engine?.youtubePlayer?.pause?.();
+    youtubePlayer.pause();
     engine?.stopProceduralSynthesizer?.();
     if (engine) {
       engine.isSynthesized = false;
