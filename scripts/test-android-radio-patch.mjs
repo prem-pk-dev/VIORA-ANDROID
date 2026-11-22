@@ -62,7 +62,7 @@ export function initMediaSession() {
     try {
       navigator.mediaSession.setActionHandler(action, handler);
     } catch (e) {
-      console.debug(`Media Session action not supported: ${action}`);
+      console.debug(\`Media Session action not supported: \${action}\`);
     }
   };
   state.subscribe("songChanged", (song) => updateMetadata(song));
