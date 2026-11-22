@@ -20,18 +20,27 @@ class RadioPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         player = ExoPlayer.Builder(this).build()
-        RadioPlaybackState.commandSink = { action, volume ->
-            when (action) {
+        RadioPlaybackState.commandSink = { intent ->
+            when (intent.action) {
+                ACTION_PLAY -> {
+                    playStation(
+                        intent.getStringExtra(EXTRA_STATION_ID).orEmpty(),
+                        intent.getStringExtra(EXTRA_STREAM_URL).orEmpty(),
+                        intent.getStringExtra(EXTRA_TITLE).orEmpty(),
+                        intent.getStringExtra(EXTRA_ARTIST).orEmpty(),
+                        intent.getStringExtra(EXTRA_ARTWORK).orEmpty(),
+                        intent.getStringExtra(EXTRA_BITRATE).orEmpty()
+                    )
+                    true
+                }
                 ACTION_PAUSE -> { player.pause(); true }
                 ACTION_RESUME -> { if (player.mediaItemCount > 0) player.play(); true }
                 ACTION_STOP -> { stopAndClear(); true }
                 ACTION_VOLUME -> {
-                    if (volume == null) false else {
-                        player.volume = volume.coerceIn(0f, 1f)
-                        RadioPlaybackState.volume = player.volume
-                        publishState()
-                        true
-                    }
+                    player.volume = intent.getFloatExtra(EXTRA_VOLUME, 1f).coerceIn(0f, 1f)
+                    RadioPlaybackState.volume = player.volume
+                    publishState()
+                    true
                 }
                 else -> false
             }
@@ -223,17 +232,17 @@ class RadioPlaybackService : MediaSessionService() {
                 putExtra(EXTRA_ARTWORK, artwork)
                 putExtra(EXTRA_BITRATE, bitrate)
             }
-            ContextCompat.startForegroundService(context, intent)
+            if (RadioPlaybackState.commandSink?.invoke(intent) != true) {
+                ContextCompat.startForegroundService(context, intent)
+            }
         }
 
         fun dispatch(context: Context, action: String, volume: Float? = null) {
-            RadioPlaybackState.commandSink?.let { handler ->
-                if (handler(action, volume)) return
-            }
-            // Do not create a foreground service merely to pause/stop an idle player.
-            if (RadioPlaybackState.stationId.isBlank()) return
             val intent = Intent(context, RadioPlaybackService::class.java).setAction(action)
             if (volume != null) intent.putExtra(EXTRA_VOLUME, volume.coerceIn(0f, 1f))
+            if (RadioPlaybackState.commandSink?.invoke(intent) == true) return
+            // Do not create a service merely to control an idle player.
+            if (RadioPlaybackState.stationId.isBlank()) return
             context.startService(intent)
         }
     }
@@ -250,7 +259,7 @@ internal object RadioPlaybackState {
     @Volatile var volume: Float = 1f
     @Volatile var errorCode: String = ""
     @Volatile var eventSink: ((String) -> Unit)? = null
-    @Volatile var commandSink: ((String, Float?) -> Boolean)? = null
+    @Volatile var commandSink: ((Intent) -> Boolean)? = null
 
     fun toJson(type: String): JSONObject = JSONObject()
         .put("version", 1)
