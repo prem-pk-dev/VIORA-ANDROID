@@ -327,7 +327,12 @@ internal object VioraApiProxy {
     }
 
     private fun queryLyrics(url: String): List<JSONObject> {
-        val raw = fetchText(url, mapOf("LrcLib-Client" to "VIORA-MusicPlayer (Android)")) ?: return emptyList()
+        val raw = fetchText(
+            url,
+            mapOf("LrcLib-Client" to "VIORA-MusicPlayer (Android)"),
+            connectTimeoutMs = 4500,
+            readTimeoutMs = 4500
+        ) ?: return emptyList()
         return try {
             when (val parsed = JSONTokener(raw).nextValue()) {
                 is JSONArray -> (0 until parsed.length()).mapNotNull { parsed.optJSONObject(it) }
@@ -367,8 +372,10 @@ internal object VioraApiProxy {
 
     private fun cleanArtist(raw: String): String {
         val lower = raw.lowercase(Locale.ROOT).trim()
-        if (listOf("local artist", "unknown", "various", "artist", "t-series", "vevo", "zee music", "speed records")
-                .any { lower.contains(it) }) return ""
+        if (lower.contains("local artist") || lower.contains("unknown") ||
+            lower.contains("various") || lower == "artist" || lower == "t-series" ||
+            lower.contains("vevo") || lower.contains("zee music") ||
+            lower.contains("speed records")) return ""
         return raw.replace(Regex("feat\\..*", RegexOption.IGNORE_CASE), "")
             .replace(Regex("ft\\..*", RegexOption.IGNORE_CASE), "")
             .substringBefore(",").trim()
@@ -391,13 +398,18 @@ internal object VioraApiProxy {
 
     private fun enc(value: String): String = URLEncoder.encode(value, "UTF-8")
 
-    private fun fetchText(url: String, headers: Map<String, String> = emptyMap()): String? {
+    private fun fetchText(
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+        connectTimeoutMs: Int = 9000,
+        readTimeoutMs: Int = 14000
+    ): String? {
         var connection: HttpURLConnection? = null
         return try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                connectTimeout = 9000
-                readTimeout = 14000
+                connectTimeout = connectTimeoutMs
+                readTimeout = readTimeoutMs
                 instanceFollowRedirects = true
                 setRequestProperty("User-Agent", USER_AGENT)
                 headers.forEach { (key, value) -> setRequestProperty(key, value) }
