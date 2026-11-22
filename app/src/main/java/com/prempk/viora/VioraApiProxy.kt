@@ -241,7 +241,11 @@ internal object VioraApiProxy {
         val items = JSONArray()
         val seenIds = mutableSetOf<String>()
         val renderer = Regex(
-            """"videoRenderer":\\{"videoId":"([A-Za-z0-9_-]{11})".*?"title":\\{"runs":\\[\\{"text":"([^"]+)""",
+            """"videoRenderer":\{"videoId":"([A-Za-z0-9_-]{11})".*?"title":\{"runs":\[\{"text":"([^"]+)""",
+            setOf(RegexOption.DOT_MATCHES_ALL)
+        )
+        val channelPattern = Regex(
+            """"ownerText":\{"runs":\[\{"text":"([^"]+)""",
             setOf(RegexOption.DOT_MATCHES_ALL)
         )
         val channelPattern = Regex(
