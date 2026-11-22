@@ -1,43 +1,46 @@
 # VIORA Android
 
-Separate Android application for the existing VIORA PWA. The production PWA repository is **not modified** by this project.
+A separate Android application for the existing VIORA PWA. This repository is isolated from the production website repository.
 
-## Build model
+## Architecture
 
-- Android source: Kotlin + Android WebView.
-- UI: the exact production Vite build output from `prem-pk-dev/VILORA`, copied into the APK at build time.
-- Android build: GitHub Actions (no Android Studio/JDK/SDK installation required on the user's computer).
-- Output: debug APK uploaded as a workflow artifact.
-- Budget: GitHub Actions free allowance only; no paid service is enabled.
+- **Android shell:** Kotlin + Android WebView.
+- **PWA UI:** the unchanged Vite production build from private repository `prem-pk-dev/VILORA`, bundled locally into the APK.
+- **Local media:** Android document picker passes selected audio files to the existing PWA import flow; the PWA stores audio blobs in IndexedDB.
+- **PWA API compatibility:** native Kotlin adapters implement the PWA's `/api/lyrics` (LRCLIB) and `/api/youtube/search` (YouTube search-page fallback) routes. This avoids depending on Vercel SSO-protected domains or a separate paid backend.
+- **Build:** GitHub Actions only. No Android Studio, JDK, or Android SDK installation is needed on the user's computer.
+- **Budget:** use the existing free GitHub Actions allowance; do not enable paid services.
 
-## Required GitHub configuration
+## One-time GitHub secret
 
-The PWA repository is private, so GitHub Actions in this repository needs a read-only token to check it out.
+The source PWA repository is private. GitHub Actions in this repository therefore needs read-only access to it.
 
-1. Create a GitHub fine-grained personal access token restricted to **only** `prem-pk-dev/VILORA`, with **Contents: Read-only** permission.
-2. In this repository open **Settings → Secrets and variables → Actions → New repository secret**.
-3. Add secret name `VIORA_SOURCE_TOKEN` and paste the token. Never put the token in source code or chat.
+1. Create a GitHub **fine-grained personal access token** restricted to only `prem-pk-dev/VILORA`.
+2. Grant **Contents: Read-only** permission.
+3. In this repository open **Settings → Secrets and variables → Actions → New repository secret**.
+4. Name it `VIORA_SOURCE_TOKEN` and paste the token.
 
-The PWA's API routes are same-origin (`/api/lyrics` and `/api/youtube/search`). The app's native WebView client forwards those requests to the configured public API origin. Add repository variable `VIORA_API_BASE_URL` under **Settings → Secrets and variables → Actions → Variables**. It must be an HTTPS origin that serves the VIORA API routes without interactive login/SSO. A Vercel domain protected by SSO cannot be used by the APK.
+Never put the token in a file, commit, issue, or chat. The workflow checks out the PWA with credentials persistence disabled and does not write to the PWA repository.
 
-## Build APK
+## Build a debug APK
 
-1. Add the secret and API-origin variable above.
+1. Add the `VIORA_SOURCE_TOKEN` secret above.
 2. Open **Actions → Build VIORA Android APK → Run workflow**.
-3. Wait for the workflow to finish.
-4. Download the `VIORA-debug-apk` artifact from the successful run and install it on the Android phone.
+3. Wait for the run to complete successfully.
+4. Download the `VIORA-debug-apk` artifact from that run.
+5. Install the APK on the Android phone and test the checklist in `docs/ANDROID_TEST_PLAN.md`.
 
-A workflow run is deliberately blocked when the private source token or public API origin is missing. This prevents producing an APK that looks complete but silently lacks PWA assets or online API functionality.
+The workflow is manual-only so normal commits do not consume GitHub Actions minutes unexpectedly.
 
-## Preservation contract
+## Preservation requirements
 
-- Do not edit or deploy `prem-pk-dev/VILORA` from this repository.
-- Do not redesign, remove, or replace existing VIORA screens/features.
-- The app bundles the built PWA locally; online services still need internet.
-- Local music selection is handled through Android's document picker.
-- Native background playback/MediaSession enhancements must be added only after compatibility testing against VIORA's existing HTMLAudio/WebAudio/YouTube playback paths.
-- Never report a feature as verified until it has passed build and real-device tests.
+- Do not edit, deploy, or otherwise mutate `prem-pk-dev/VILORA` from this repository.
+- Do not redesign, remove, or replace existing VIORA screens, routes, styles, data, or working behavior.
+- Bundle the PWA build locally so app startup/UI do not depend on the website host.
+- Online YouTube, lyrics, weather, remote artwork, and other online services still require internet.
+- The PWA's existing HTMLAudio/WebAudio/YouTube playback architecture must remain intact. Native background playback/MediaSession work must be added only after compatibility testing; do not replace the audio engine blindly with a second player.
+- Do not call a feature complete until its build and relevant real-device tests pass.
 
-## Current implementation status
+## Current status
 
-Initial Android shell and cloud-build pipeline are being established. The APK is not yet considered feature-complete or device-tested.
+Initial Kotlin WebView shell, local asset loading, Android file picker, and native API adapters have been committed. The project still needs a successful cloud build, APK inspection, and real Android device testing. It is **not yet a verified complete APK**.
