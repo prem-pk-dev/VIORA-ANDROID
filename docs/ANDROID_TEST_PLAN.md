@@ -65,6 +65,19 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] YouTube IFrame and local/custom HTMLAudio paths remain unchanged and mutually exclusive with native radio.
 - [ ] Rollback to WebView radio is possible without clearing the local music library or persisted PWA state.
 
+## Android radio bridge protocol tests (before device session)
+
+- [ ] Patch script runs only against the workflow's temporary PWA checkout; source repository remains unchanged.
+- [ ] Script fails on missing/duplicate anchors and is idempotent.
+- [ ] Only the radio branch is adapted; YouTube, local/custom, standard HTMLAudio/Web Audio, EQ and visualizer code remain byte-identical in the generated source outside the intended patch ranges.
+- [ ] WebMessageListener accepts only the exact app origin and main frame.
+- [ ] Reject malformed/oversized JSON, unknown versions/commands/keys, blank IDs, non-HTTPS URLs, URL credentials, oversized metadata and invalid volume values.
+- [ ] Native session advertises play/pause only; seek, previous and next are not exposed for the initial live-radio spike.
+- [ ] Native service continues when Activity/WebView is destroyed; recreated WebView obtains a complete snapshot.
+- [ ] Native errors do not trigger an automatic WebView radio fallback that could create duplicate audio.
+- [ ] Starting YouTube or local/custom audio stops native radio before existing PWA playback starts.
+- [ ] Selecting another radio station switches the single native stream without overlapping the previous one.
+
 ## Native bridge security checks
 
 - [ ] Privileged playback commands are not added to the existing unrestricted `addJavascriptInterface` object.
