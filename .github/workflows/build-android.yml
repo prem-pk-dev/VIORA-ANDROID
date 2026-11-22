@@ -2,13 +2,6 @@ name: Build VIORA Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "app/**"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - ".github/workflows/build-android.yml"
 
 permissions:
   contents: read
