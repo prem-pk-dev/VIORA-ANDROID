@@ -39,11 +39,21 @@ jobs:
         with:
           node-version: 22
 
+      - name: Apply Android-only radio adapter to temporary PWA checkout
+        run: |
+          node scripts/patch-android-radio.mjs viora-source
+          test -s viora-source/js/android-radio-adapter.js
+          test -s viora-source/android-radio-patch-report.json
+
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
         run: |
           npm install --no-audit --no-fund
           npm run build
+          if ! grep -Rqs "radio.getSnapshot" dist/assets; then
+            echo "::error::Android radio adapter marker missing from generated PWA bundle."
+            exit 1
+          fi
 
       - name: Restore the PWA root-level motion script into Vite output
         shell: bash
