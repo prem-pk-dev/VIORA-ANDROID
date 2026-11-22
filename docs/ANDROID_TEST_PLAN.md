@@ -127,3 +127,14 @@ The first Android-only Media3 radio POC has now been implemented in source, but 
 - [ ] All existing YouTube, local/custom, EQ, effects and visualizer paths remain unchanged and functional.
 
 Do not mark any of these items complete based only on source inspection or a successful APK build. BrowserStack must remain unused until the APK is built, static checks pass, and the current free quota/policy is verified. No paid usage or billing.
+
+
+## Exported MediaSession service command-authentication checks — 22 November 2026
+
+- [ ] Confirm internal VIORA `ACTION_PLAY` start intent includes the app-private command token and starts the approved station.
+- [ ] Confirm internal fallback `ACTION_PAUSE`, `ACTION_RESUME`, `ACTION_STOP`, and `ACTION_VOLUME` intents are accepted when the service is not already handling commands in-process.
+- [ ] From a separate test app/ADB shell, send each custom service action without the private token; confirm it does not start playback, resume a saved station, or alter current playback.
+- [ ] Confirm a malformed or incorrect token is rejected.
+- [ ] Confirm legitimate external MediaSession controllers can still connect and issue only the granted play/pause commands.
+- [ ] Confirm Android media-button/session handling still works after custom-intent authentication is added.
+- [ ] Confirm stopping/clearing radio station preferences does not erase the separate app-private command token.
