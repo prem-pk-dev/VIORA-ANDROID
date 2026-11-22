@@ -5,7 +5,7 @@ import { youtubePlayer } from "./youtube-player.js";
 const pending = new Map();
 let sequence = 0;
 let listening = false;
-let setNativeRadioActive(false);
+let nativeRadioActive = false;
 
 function setNativeRadioActive(active) {
   const next = Boolean(active);
