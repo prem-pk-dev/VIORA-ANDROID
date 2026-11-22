@@ -74,9 +74,11 @@ source = replaceExactlyOnce(
   "native radio volume"
 );
 
-source = source.replace(
+source = replaceExactlyOnce(
+  source,
   'import { androidRadioAdapter } from "./android-radio-adapter.js";',
-  'import { androidRadioAdapter } from "./android-radio-adapter.js";\n// ' + marker
+  'import { androidRadioAdapter } from "./android-radio-adapter.js";\n// ' + marker,
+  "adapter marker"
 );
 
 
@@ -115,9 +117,11 @@ mediaSource = replaceExactlyOnce(
   "Web MediaSession initial metadata"
 );
 
-mediaSource = mediaSource.replace(
+mediaSource = replaceExactlyOnce(
+  mediaSource,
   'import { audioEngine } from "./audio-engine.js";',
-  'import { audioEngine } from "./audio-engine.js";\n// ' + mediaMarker
+  'import { audioEngine } from "./audio-engine.js";\n// ' + mediaMarker,
+  "media-session marker"
 );
 
 fs.writeFileSync(audioPath, source);
