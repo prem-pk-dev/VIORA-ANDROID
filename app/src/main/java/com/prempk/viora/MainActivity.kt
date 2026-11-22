@@ -1,6 +1,8 @@
 package com.prempk.viora
 
 import android.app.Activity
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -133,6 +135,14 @@ class MainActivity : Activity() {
         } else {
             webView.restoreState(savedInstanceState)
         }
+
+        // Android 13+ gates ordinary notifications behind this runtime permission.
+        // Request it so the user can see VIORA playback notification controls.
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_PERMISSION_REQUEST)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -190,6 +200,7 @@ class MainActivity : Activity() {
 
     companion object {
         private const val AUDIO_PICKER_REQUEST = 4201
+        private const val NOTIFICATION_PERMISSION_REQUEST = 4202
         private const val ASSET_HOST = "appassets.androidplatform.net"
         private const val ASSET_ORIGIN = "https://$ASSET_HOST"
     }
