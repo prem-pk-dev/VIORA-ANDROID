@@ -20,6 +20,20 @@ class RadioPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         player = ExoPlayer.Builder(this).build()
+        RadioPlaybackState.commandSink = { action, volume ->
+            when (action) {
+                ACTION_PAUSE -> player.pause()
+                ACTION_RESUME -> if (player.mediaItemCount > 0) player.play()
+                ACTION_STOP -> stopAndClear()
+                ACTION_VOLUME -> if (volume != null) {
+                    player.volume = volume.coerceIn(0f, 1f)
+                    RadioPlaybackState.volume = player.volume
+                    publishState()
+                }
+                else -> return@commandSink false
+            }
+            true
+        }
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 RadioPlaybackState.isPlaying = isPlaying
@@ -150,6 +164,7 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        RadioPlaybackState.commandSink = null
         if (::mediaSession.isInitialized) mediaSession.release()
         if (::player.isInitialized) player.release()
         super.onDestroy()
@@ -210,6 +225,9 @@ class RadioPlaybackService : MediaSessionService() {
         }
 
         fun dispatch(context: Context, action: String, volume: Float? = null) {
+            RadioPlaybackState.commandSink?.let { handler ->
+                if (handler(action, volume)) return
+            }
             val intent = Intent(context, RadioPlaybackService::class.java).setAction(action)
             if (volume != null) intent.putExtra(EXTRA_VOLUME, volume.coerceIn(0f, 1f))
             context.startService(intent)
@@ -228,6 +246,7 @@ internal object RadioPlaybackState {
     @Volatile var volume: Float = 1f
     @Volatile var errorCode: String = ""
     @Volatile var eventSink: ((String) -> Unit)? = null
+    @Volatile var commandSink: ((String, Float?) -> Boolean)? = null
 
     fun toJson(type: String): JSONObject = JSONObject()
         .put("version", 1)
