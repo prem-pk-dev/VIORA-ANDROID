@@ -41,7 +41,10 @@ class RadioPlaybackService : MediaSessionService() {
                 ACTION_PAUSE -> { player.pause(); true }
                 ACTION_RESUME -> {
                     if (player.mediaItemCount == 0) restoreSavedStationToPlayer()
-                    if (player.mediaItemCount > 0) player.play()
+                    if (player.mediaItemCount > 0) {
+                        if (player.playbackState == Player.STATE_IDLE) player.prepare()
+                        player.play()
+                    }
                     true
                 }
                 ACTION_STOP -> { stopAndClear(); true }
@@ -109,7 +112,10 @@ class RadioPlaybackService : MediaSessionService() {
             ACTION_PAUSE -> if (::player.isInitialized) player.pause()
             ACTION_RESUME -> if (::player.isInitialized) {
                 if (player.mediaItemCount == 0) restoreSavedStationToPlayer()
-                if (player.mediaItemCount > 0) player.play()
+                if (player.mediaItemCount > 0) {
+                    if (player.playbackState == Player.STATE_IDLE) player.prepare()
+                    player.play()
+                }
             }
             ACTION_STOP -> stopAndClear()
             ACTION_VOLUME -> if (::player.isInitialized) {
