@@ -95,6 +95,47 @@ For future privileged JS/native commands, prefer AndroidX WebKit `WebViewCompat.
 
 This follows the AndroidX WebKit API's origin-scoped message listener model. See [WebViewCompat reference](https://developer.android.com/reference/androidx/webkit/WebViewCompat) and [WebView message listener source](https://github.com/androidx/androidx/blob/androidx-main/webkit/webkit/src/main/java/androidx/webkit/WebViewCompat.java).
 
+## Android-only implementation blueprint — radio POC
+
+### Build-time adaptation boundary
+The Android workflow already checks out the PWA into a temporary `viora-source/` directory and builds it there. The next implementation should add a version-controlled Android script under `scripts/` that patches only this temporary checkout before `npm run build`. It must never commit, push, or otherwise write to `prem-pk-dev/VILORA`.
+
+The patch script should:
+- Require exact unique anchors in `js/audio-engine.js` and fail if any anchor is missing or duplicated.
+- Be idempotent: a second invocation must detect the adapter marker and fail or report already-patched, never duplicate code.
+- Inject a small Android-only radio adapter and change only the radio branch. YouTube, local/custom audio, standard HTMLAudio/Web Audio, EQ, visualizer and PWA Media Session paths remain untouched.
+- Emit a patch report listing each applied anchor and verify the built output contains the adapter marker.
+- Run before Vite build in the Android workflow, then bundle the generated dist as it does today.
+
+### Proposed bridge message schema (version 1)
+The page-to-native message object is JSON with a strict 16 KiB maximum and exactly these supported command names:
+- `radio.play`: `stationId`, `streamUrl`, `title`, `artist`, `artworkUrl`, `bitrate`.
+- `radio.pause`: no additional fields.
+- `radio.resume`: no additional fields.
+- `radio.setVolume`: `volume` in [0, 1].
+- `radio.getSnapshot`: no additional fields.
+
+Every message includes `version: 1` and a non-empty request ID. Reject unknown keys, command names, missing values, non-HTTPS stream/artwork URLs, credentials in URLs, oversized strings, malformed JSON, and non-main-frame messages. Validate station ID and stream URL against the current station object sent by the Android-generated adapter; do not accept arbitrary web page messages as radio station commands.
+
+Native-to-page events use a separate version-1 event shape:
+- `radio.snapshot`: station metadata, `isPlaying`, `isBuffering`, error code, and volume.
+- `radio.state`: `isPlaying` and `isBuffering`.
+- `radio.error`: bounded error code; no raw exception or URL.
+- `radio.stopped`: reason code.
+
+No event is allowed to invoke `playRadio()` or mutate the PWA queue. It updates only the current radio UI state. If the WebView is absent, the service remains independent; on page load, the adapter sends `radio.getSnapshot`.
+
+### Native service ownership and transitions
+- On `radio.play`, native code validates the HTTPS URL and station descriptor, stops/clears any prior native item, and starts the MediaSessionService with an explicit action and bounded extras.
+- The Android adapter first pauses and clears the WebView `radioAudio` element; only after native acceptance does it mark native radio as owner. If native startup fails, surface a controlled error; do not silently start a second player.
+- When the user selects YouTube or local/custom audio, the Android adapter sends `radio.pause` and waits for the native service to confirm stopped/paused before the existing PWA source starts.
+- The first native MediaSession exposes play and pause only. Do not expose seek, previous or next commands in the native session for this spike. The in-app radio station picker may still select another station through a new validated `radio.play` command.
+- Native player volume follows the PWA volume/mute state; no independent Android-only volume slider is introduced.
+- On Activity/WebView recreation, request the native snapshot. Never store an Activity or WebView reference in the service.
+
+### Remaining implementation gates
+Before coding the service, confirm the exact Media3 1.11.1 API signatures for session command filtering, custom player commands, metadata artwork loading, and player error propagation. Add the dependency set consistently (`media3-exoplayer`, `media3-session`, and `media3-common`, all at the same version). Keep all service manifest declarations limited to the media playback foreground-service type and required permissions. No notification permission prompt should be added without checking the Android version-specific policy.
+
 ## JavaScript ↔ native command contract
 
 The Android adapter should use a versioned, allow-listed message schema. The exact bridge method names are not finalized; the following are required semantic operations:
