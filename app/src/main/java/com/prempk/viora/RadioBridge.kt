@@ -100,6 +100,13 @@ internal class RadioBridge(
                         proxy.postMessage(errorJson(requestId, "INVALID_STATION").toString())
                         return
                     }
+                    // Mark the requested owner before dispatch so an immediate source switch
+                    // queues radio.stop behind radio.play even while the service is starting.
+                    RadioPlaybackState.stationId = stationId
+                    RadioPlaybackState.title = title
+                    RadioPlaybackState.artist = artist
+                    RadioPlaybackState.artwork = artwork
+                    RadioPlaybackState.bitrate = bitrate
                     RadioPlaybackService.startPlay(context, stationId, streamUrl, title, artist, artwork, bitrate)
                 }
                 "radio.pause" -> RadioPlaybackService.dispatch(context, RadioPlaybackService.ACTION_PAUSE)
