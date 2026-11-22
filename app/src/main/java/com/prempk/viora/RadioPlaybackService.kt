@@ -108,14 +108,15 @@ class RadioPlaybackService : MediaSessionService() {
             // start commands must carry a token stored in VIORA's private preferences.
             return serviceStartResult
         }
+        val commandIntent = intent ?: return serviceStartResult
         when (action) {
             ACTION_PLAY -> playStation(
-                intent.getStringExtra(EXTRA_STATION_ID).orEmpty(),
-                intent.getStringExtra(EXTRA_STREAM_URL).orEmpty(),
-                intent.getStringExtra(EXTRA_TITLE).orEmpty(),
-                intent.getStringExtra(EXTRA_ARTIST).orEmpty(),
-                intent.getStringExtra(EXTRA_ARTWORK).orEmpty(),
-                intent.getStringExtra(EXTRA_BITRATE).orEmpty()
+                commandIntent.getStringExtra(EXTRA_STATION_ID).orEmpty(),
+                commandIntent.getStringExtra(EXTRA_STREAM_URL).orEmpty(),
+                commandIntent.getStringExtra(EXTRA_TITLE).orEmpty(),
+                commandIntent.getStringExtra(EXTRA_ARTIST).orEmpty(),
+                commandIntent.getStringExtra(EXTRA_ARTWORK).orEmpty(),
+                commandIntent.getStringExtra(EXTRA_BITRATE).orEmpty()
             )
             ACTION_PAUSE -> if (::player.isInitialized) player.pause()
             ACTION_RESUME -> if (::player.isInitialized) {
@@ -127,7 +128,7 @@ class RadioPlaybackService : MediaSessionService() {
             }
             ACTION_STOP -> stopAndClear()
             ACTION_VOLUME -> if (::player.isInitialized) {
-                player.volume = (intent.getFloatExtra(EXTRA_VOLUME, 1f)).coerceIn(0f, 1f)
+                player.volume = (commandIntent.getFloatExtra(EXTRA_VOLUME, 1f)).coerceIn(0f, 1f)
                 RadioPlaybackState.volume = player.volume
                 publishState()
             }
