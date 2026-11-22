@@ -79,6 +79,9 @@ function send(command, fields = {}) {
 function applyNativeState(message) {
   if (message.type === "radio.snapshot") {
     setNativeRadioActive(Boolean(message.stationId));
+    if (nativeRadioActive) {
+      send("radio.setVolume", { volume: state.isMuted ? 0 : state.volume });
+    }
     if (nativeRadioActive && state.currentSong?.source !== "radio") {
       const station = (state.radioStations || []).find((item) => item.id === message.stationId);
       if (station) {
