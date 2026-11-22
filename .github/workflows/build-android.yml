@@ -143,6 +143,8 @@ jobs:
 
       - name: Android Emulator launch and lifecycle smoke test
         uses: ReactiveCircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: 35
           arch: x86_64
