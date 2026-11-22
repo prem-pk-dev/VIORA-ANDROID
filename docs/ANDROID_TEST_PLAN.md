@@ -38,6 +38,12 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] First online launch populates the service-worker cache.
 - [ ] Cached app UI opens offline; online API requests fail gracefully and recover after reconnect.
 
+## Known limitations before feature-complete sign-off
+
+- [ ] **YouTube pagination:** the Android direct-HTML fallback currently returns `nextPageToken: null`. The unchanged PWA server route behaves the same when `YOUTUBE_API_KEY` is not configured. Do not show a fake continuation token or embed an API key in the APK. Revisit only with a tested continuation implementation or a user-configured secure backend.
+- [ ] **Background playback / native media controls:** not implemented or verified yet. The current Web Audio / HTMLAudio / YouTube IFrame playback engine must remain the single playback engine during any first integration attempt. Do not add a second ExoPlayer/Media3 playback engine beside it; that could desynchronize queue, EQ, visualizer, radio, YouTube and local playback. Any native session/foreground-service bridge must prove lifecycle behavior, command synchronization, audio focus, screen-off playback and process recreation before being accepted.
+- [ ] **Android 15 edge-to-edge:** safe-area inset handling is present in `MainActivity.kt`, but visual verification on Android 15+ is still pending.
+
 ## Stability and security
 - [ ] External top-level links open outside the app; embedded YouTube and remote media still work.
 - [ ] No mixed-content or JavaScript bridge security warnings.
