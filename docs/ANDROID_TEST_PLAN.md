@@ -75,7 +75,7 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] Native session advertises play/pause only; seek, previous and next are not exposed for the initial live-radio spike.
 - [ ] Native service continues when Activity/WebView is destroyed; recreated WebView obtains a complete snapshot.
 - [ ] Native errors do not trigger an automatic WebView radio fallback that could create duplicate audio.
-- [ ] Starting YouTube or local/custom audio stops native radio before existing PWA playback starts.
+- [ ] Starting YouTube or local/custom audio sends `radio.stop`, confirms the native item/session is cleared, then starts existing PWA playback.
 - [ ] Selecting another radio station switches the single native stream without overlapping the previous one.
 
 ## Media3 session command exposure tests
