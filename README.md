@@ -50,5 +50,6 @@ The workflow is manual-only so normal commits do not consume GitHub Actions minu
 - YouTube direct-HTML fallback currently has no continuation token when no secure YouTube Data API key is configured. Do not fabricate pagination tokens or embed an API key in the APK.
 - Native background playback, MediaSession, notification/lock-screen controls, audio focus, and headphone controls are not implemented or verified. Preserve the existing Web Audio / HTMLAudio / YouTube playback architecture; do not add a second independent player without a proven synchronization design.
 - The current test checklist is in [docs/ANDROID_TEST_PLAN.md](docs/ANDROID_TEST_PLAN.md).
+- The proposed native audio/Media3 integration contract and migration gates are in [docs/ANDROID_PLAYBACK_ARCHITECTURE.md](docs/ANDROID_PLAYBACK_ARCHITECTURE.md).
 
 The current source is **not yet a verified complete APK**. Run one grouped manual build only after implementation changes are ready, then inspect the resulting artifact and test it on Android hardware. Keep all work within the user's ₹0 budget and keep the original PWA repository read-only.
