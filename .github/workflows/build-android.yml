@@ -130,6 +130,13 @@ jobs:
       - name: Generate Gradle wrapper
         run: gradle wrapper --gradle-version 8.13
 
+      - name: Restore stable internal debug signing key
+        shell: bash
+        run: |
+          base64 --decode keystore/viora-debug.keystore.b64 > app/viora-debug.keystore
+          test -s app/viora-debug.keystore
+          keytool -list -keystore app/viora-debug.keystore -storepass android -alias androiddebugkey >/dev/null
+
       - name: Build debug APK
         run: ./gradlew --no-daemon :app:assembleDebug
 
