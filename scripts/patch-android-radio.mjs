@@ -50,7 +50,7 @@ source = replaceExactlyOnce(
 source = replaceExactlyOnce(
   source,
   '    } else if (isRadio) {\n      // 2. Live Radio Stream\n      youtubePlayer.pause();',
-  '    } else if (isRadio) {\n      // 2. Live Radio Stream\n      if (androidRadioAdapter.isActive()) {\n        androidRadioAdapter.resume();\n        return;\n      }\n      youtubePlayer.pause();',
+  '    } else if (isRadio) {\n      // 2. Live Radio Stream\n      if (androidRadioAdapter.isAndroidShell()) {\n        androidRadioAdapter.resume();\n        return;\n      }\n      youtubePlayer.pause();',
   "native radio resume"
 );
 
