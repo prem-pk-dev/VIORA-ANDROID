@@ -43,7 +43,7 @@ source = replaceExactlyOnce(
 source = replaceExactlyOnce(
   source,
   '    const isRadio = state.isStream || (song && (song.source === "radio" || song.isLive));\n\n    // If current song is not from YouTube,',
-  '    const isRadio = state.isStream || (song && (song.source === "radio" || song.isLive));\n\n    // A native radio item must be fully cleared before another WebView-owned source starts.\n    if (!isRadio && androidRadioAdapter.isActive()) {\n      const stopped = await androidRadioAdapter.stop();\n      if (!stopped) {\n        state.isPlaying = false;\n        state.notify("playbackStateChanged", false);\n        showToast("Could not safely stop native radio; playback handoff was cancelled.", "error");\n        return;\n      }\n    }\n\n    // If current song is not from YouTube,',
+  '    const isRadio = state.isStream || (song && (song.source === "radio" || song.isLive));\n\n    // A native radio item must be fully cleared before another WebView-owned source starts.\n    if (!isRadio && androidRadioAdapter.isAndroidShell()) {\n      const stopped = await androidRadioAdapter.stop();\n      if (!stopped) {\n        state.isPlaying = false;\n        state.notify("playbackStateChanged", false);\n        showToast("Could not safely stop native radio; playback handoff was cancelled.", "error");\n        return;\n      }\n    }\n\n    // If current song is not from YouTube,',
   "native-to-WebView handoff"
 );
 
@@ -57,7 +57,7 @@ source = replaceExactlyOnce(
 source = replaceExactlyOnce(
   source,
   '    } else if (isRadio) {\n      if (this.radioAudio) this.radioAudio.pause();',
-  '    } else if (isRadio) {\n      if (androidRadioAdapter.isActive()) androidRadioAdapter.pause();\n      else if (this.radioAudio) this.radioAudio.pause();',
+  '    } else if (isRadio) {\n      if (androidRadioAdapter.isAndroidShell()) androidRadioAdapter.pause();\n      else if (this.radioAudio) this.radioAudio.pause();',
   "native radio pause"
 );
 
