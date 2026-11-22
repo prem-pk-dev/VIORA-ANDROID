@@ -106,3 +106,24 @@ Do not mark the Android build complete until the following checks are performed 
 - Current PWA playback routing was rechecked in `js/audio-engine.js`: YouTube IFrame, live radio, and local/custom tracks have explicit playback paths. A generic direct-remote-audio playback path was not found; do not count that as an existing working feature or use it as the first production integration target without a separate product decision.
 - Local audio bytes live in IndexedDB (`MusiqLibraryDB` / `audioBlobs`); the WebView creates temporary Blob URLs for playback. Local metadata in localStorage alone is not enough to restore the audio bytes in a native service.
 - Native playback work remains unimplemented. No Media3 service, native controls, or background-playback behavior is considered tested.
+
+
+## Radio POC implementation status — 22 November 2026
+
+The first Android-only Media3 radio POC has now been implemented in source, but it is not yet built or runtime-tested. The earlier checklist remains the acceptance criteria; the following points describe the new code that must now be verified.
+
+- [ ] Workflow fixture test proves the generated PWA patch applies once and rejects a second application.
+- [ ] Workflow applies the patch only inside the temporary PWA checkout and confirms both the radio adapter and Web MediaSession handoff are present in the Vite bundle.
+- [ ] The Android bridge rejects non-main-frame messages, wrong origins, unknown commands/fields, invalid station ID/URL pairs, invalid volume and oversized messages.
+- [ ] Only the 12 current PWA radio station IDs and exact HTTPS stream URLs are accepted.
+- [ ] Native service uses one ExoPlayer and one MediaSession; external session controls are limited to play/pause and read-only metadata/timeline.
+- [ ] Browser/Web MediaSession is suppressed while native radio owns playback, then restored after radio.stopped.
+- [ ] radio.pause retains the current station; radio.stop clears the media item and persistent station state.
+- [ ] WebView-to-native and native-to-WebView ownership transitions do not overlap audio. YouTube/local playback starts only after native stop acknowledgement.
+- [ ] A paused station can be restored after Activity/WebView recreation and after service recreation from app-private station metadata.
+- [ ] Native volume follows the PWA volume/mute state after initial playback and after snapshot restoration.
+- [ ] Audio focus and headphone-unplug handling work on a real Android device.
+- [ ] Notification/lock-screen play-pause controls work; no seek, next or previous actions are exposed for this POC.
+- [ ] All existing YouTube, local/custom, EQ, effects and visualizer paths remain unchanged and functional.
+
+Do not mark any of these items complete based only on source inspection or a successful APK build. BrowserStack must remain unused until the APK is built, static checks pass, and the current free quota/policy is verified. No paid usage or billing.
