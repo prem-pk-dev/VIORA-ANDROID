@@ -39,6 +39,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Test Android radio patcher against isolated fixture
+        run: node scripts/test-android-radio-patch.mjs
+
       - name: Apply Android-only radio adapter to temporary PWA checkout
         run: |
           node scripts/patch-android-radio.mjs viora-source
