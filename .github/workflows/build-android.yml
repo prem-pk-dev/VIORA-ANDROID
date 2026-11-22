@@ -19,24 +19,15 @@ jobs:
     timeout-minutes: 30
     env:
       VIORA_SOURCE_TOKEN: ${{ secrets.VIORA_SOURCE_TOKEN }}
-      VIORA_API_BASE_URL: ${{ vars.VIORA_API_BASE_URL }}
 
     steps:
-      - name: Check required private-source access and API origin
+      - name: Check private-source access
         shell: bash
         run: |
           if [ -z "$VIORA_SOURCE_TOKEN" ]; then
             echo "::error::Add the VIORA_SOURCE_TOKEN Actions secret (fine-grained token with Contents: Read-only access to prem-pk-dev/VILORA)."
             exit 1
           fi
-          if [ -z "$VIORA_API_BASE_URL" ]; then
-            echo "::error::Add the VIORA_API_BASE_URL Actions variable. It must be an HTTPS API origin accessible without interactive login or SSO."
-            exit 1
-          fi
-          case "$VIORA_API_BASE_URL" in
-            https://*) ;;
-            *) echo "::error::VIORA_API_BASE_URL must start with https://"; exit 1 ;;
-          esac
 
       - name: Checkout Android repository
         uses: actions/checkout@v4
