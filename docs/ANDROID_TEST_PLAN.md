@@ -44,6 +44,17 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] **Background playback / native media controls:** not implemented or verified yet. The current Web Audio / HTMLAudio / YouTube IFrame playback engine must remain the single playback engine during any first integration attempt. Do not add a second ExoPlayer/Media3 playback engine beside it; that could desynchronize queue, EQ, visualizer, radio, YouTube and local playback. Any native session/foreground-service bridge must prove lifecycle behavior, command synchronization, audio focus, screen-off playback and process recreation before being accepted.
 - [ ] **Android 15 edge-to-edge:** safe-area inset handling is present in `MainActivity.kt`, but visual verification on Android 15+ is still pending.
 
+## Android bridge / playback integration gates (before BrowserStack)
+
+- [ ] Source capability is explicit: YouTube stays in WebView; radio is live and non-seekable; existing local Blob playback remains in WebView until persistent URI migration is implemented.
+- [ ] Unknown or unsupported track descriptors fail closed; no guessed `url` field and no silent fallback to a second player.
+- [ ] JS/native command contract is versioned, allow-listed, size-bounded, and rejects untrusted schemes/origins.
+- [ ] Native events update the existing UI without re-triggering playback or duplicating queue mutations.
+- [ ] `prevTrack()` semantics are preserved: radio changes station; regular in-app previous restarts after 3 seconds; lock-screen Media Session previous currently selects the previous queue item.
+- [ ] Queue state (`queue`, `queueIndex`) and `queueChanged` / `songChanged` / `playbackStateChanged` / `timeUpdate` round-trip without loops.
+- [ ] Android-only generated-bundle patch checks fail closed if expected PWA bundle anchors change; original PWA repo remains untouched.
+- [ ] No Media3 implementation is accepted until a genuine supported source type and rollback path are documented.
+
 ## Stability and security
 - [ ] External top-level links open outside the app; embedded YouTube and remote media still work.
 - [ ] No mixed-content or JavaScript bridge security warnings.
