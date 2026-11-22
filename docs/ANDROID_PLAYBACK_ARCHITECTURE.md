@@ -112,6 +112,19 @@ Do not delete or overwrite the existing PWA IndexedDB library during migration.
 - Do not call WebView APIs from a background thread. Do not make the service depend on an Activity or a retained WebView reference.
 - Android 15 edge-to-edge insets remain a separate UI verification item.
 
+## Official Android implementation baseline checked on 22 November 2026
+
+- The AndroidX release page lists Media3 **1.11.1 as the stable release**. Media3 1.12.0-beta01 is newer but pre-release; use stable 1.11.1 for the first proof of concept unless a documented fix requires a later version. Keep all Media3 artifacts on one identical version.
+- Android's official background-playback guide recommends keeping both the Player and MediaSession inside a MediaSessionService so playback can continue when the Activity is not foregrounded.
+- For a target-SDK-35 media playback foreground service, the manifest/service design must account for the mediaPlayback foreground-service type and the required FOREGROUND_SERVICE and FOREGROUND_SERVICE_MEDIA_PLAYBACK permissions. Confirm the complete current Android requirements before implementation.
+- The MediaSessionService lifecycle and notification are tied to the actual Player/session state. A service with no real player, or a fake session merely forwarding to a WebView, does not satisfy the architecture requirement.
+- The recommended implementation is therefore a real native player for the source types explicitly assigned to Media3, not a notification-only wrapper around the existing WebView.
+
+Official references:
+- [AndroidX Media3 release versions](https://developer.android.com/jetpack/androidx/releases/media3)
+- [MediaSessionService API](https://developer.android.com/reference/androidx/media3/session/MediaSessionService)
+- [Background playback with MediaSessionService](https://developer.android.com/media/media3/session/background-playback)
+
 ## Safe implementation phases
 
 1. **Contract and source model:** finalize source descriptors, item IDs, queue serialization, native state model, error handling and local-URI strategy.
