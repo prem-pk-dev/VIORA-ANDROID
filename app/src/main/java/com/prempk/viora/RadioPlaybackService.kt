@@ -230,6 +230,8 @@ class RadioPlaybackService : MediaSessionService() {
             RadioPlaybackState.commandSink?.let { handler ->
                 if (handler(action, volume)) return
             }
+            // Do not create a foreground service merely to pause/stop an idle player.
+            if (RadioPlaybackState.stationId.isBlank()) return
             val intent = Intent(context, RadioPlaybackService::class.java).setAction(action)
             if (volume != null) intent.putExtra(EXTRA_VOLUME, volume.coerceIn(0f, 1f))
             context.startService(intent)
