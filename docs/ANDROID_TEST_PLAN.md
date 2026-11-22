@@ -55,6 +55,16 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] Android-only generated-bundle patch checks fail closed if expected PWA bundle anchors change; original PWA repo remains untouched.
 - [ ] No Media3 implementation is accepted until a genuine supported source type and rollback path are documented.
 
+## Scoped Media3 radio proof-of-concept acceptance
+
+- [ ] Use an existing `state.radioStations` item with its verified station metadata and HTTPS `streamUrl`; no fabricated source or test-only fake track.
+- [ ] Android-native service owns the selected radio stream; WebView `radioAudio` is not started for the same station.
+- [ ] UI station title/artist/artwork and playing/paused state remain synchronized.
+- [ ] Live radio seek is unavailable; no finite duration or fake seek position is displayed.
+- [ ] Native session supports play/pause only for the first spike; next/previous controls remain absent until station-list synchronization is implemented.
+- [ ] YouTube IFrame and local/custom HTMLAudio paths remain unchanged and mutually exclusive with native radio.
+- [ ] Rollback to WebView radio is possible without clearing the local music library or persisted PWA state.
+
 ## Native bridge security checks
 
 - [ ] Privileged playback commands are not added to the existing unrestricted `addJavascriptInterface` object.
