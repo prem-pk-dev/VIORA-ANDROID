@@ -185,6 +185,9 @@ class RadioPlaybackService : MediaSessionService() {
             "rad-12" to "https://ice1.somafm.com/secretagent-128-mp3"
         )
 
+        fun isApprovedStation(stationId: String, streamUrl: String): Boolean =
+            APPROVED_STREAMS[stationId] == streamUrl
+
         fun startPlay(
             context: Context,
             stationId: String,
