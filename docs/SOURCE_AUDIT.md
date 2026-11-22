@@ -66,3 +66,10 @@ The existing UI also includes the main player, fullscreen player, audio/video/ly
 - No successful Android Gradle build has yet been run.
 - No APK has yet been installed on a physical Android phone.
 - No background playback, notification, lock-screen, headphone, YouTube, equalizer, or offline feature is marked device-tested.
+
+
+## Deployment/security observation
+
+- The connected Vercel project `vilora` has SSO protection enabled for its listed Vercel-hosted domains. The Android app therefore does not rely on those domains for its same-origin API routes.
+- Vercel environment metadata lists a sensitive `YOUTUBE_API_KEY` entry; its value was not read. The Android APK does not embed or expose a private YouTube API key. Its native search adapter mirrors the PWA's no-key YouTube HTML fallback instead.
+- Because the Android app bundles the exact Vite build output and implements its two API routes locally in Kotlin, no public API origin or Vercel login is required for those two routes. Internet is still required to contact LRCLIB, YouTube, weather, artwork, and streams.
