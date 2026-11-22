@@ -88,6 +88,7 @@ internal class RadioBridge(
         }
 
         try {
+            RadioPlaybackService.restoreSnapshot(context)
             when (command) {
                 "radio.play" -> {
                     val stationId = request.getString("stationId")
