@@ -72,6 +72,14 @@ Current exposed effect state includes ten `eqBands`, `preamp`, `bassBoost`, `ste
 
 There is no verified existing direct-remote-audio source to route into Media3. Therefore, the next implementation gate is **not** adding a Media3 player or foreground service. First create a deterministic Android-only adapter design with exact generated-bundle patch anchors, a versioned message schema, and an explicit source capability check. The first proof of concept must use a genuine existing source only if its durable source data can be provided safely; otherwise it must be clearly test-only and must not be presented as a completed VIORA playback feature.
 
+## Bridge security decision
+
+The current `VioraAndroid` JavaScript interface exposes only `isAndroidApp()` and `getAppVersion()`; these are informational methods, not a privileged playback API. Do not add playback, filesystem, intent, or service-control commands to this unrestricted `addJavascriptInterface` surface.
+
+For future privileged JS/native commands, prefer AndroidX WebKit `WebViewCompat.addWebMessageListener()` with the exact trusted app origin `https://appassets.androidplatform.net` in `allowedOriginRules`, and check `WebViewFeature.WEB_MESSAGE_LISTENER` support before registration. The listener must also verify `isMainFrame`, validate the message schema/version/size, allow-list command names and source types, and reject unknown fields or URL schemes. Do not use wildcard origin rules. If the feature is unavailable on the installed WebView, disable native command integration safely rather than falling back to an unrestricted bridge. The currently pinned `androidx.webkit:webkit:1.12.1` is above the API's 1.3.0 introduction version; runtime feature support still needs device verification.
+
+This follows the AndroidX WebKit API's origin-scoped message listener model. See [WebViewCompat reference](https://developer.android.com/reference/androidx/webkit/WebViewCompat) and [WebView message listener source](https://github.com/androidx/androidx/blob/androidx-main/webkit/webkit/src/main/java/androidx/webkit/WebViewCompat.java).
+
 ## JavaScript ↔ native command contract
 
 The Android adapter should use a versioned, allow-listed message schema. The exact bridge method names are not finalized; the following are required semantic operations:
