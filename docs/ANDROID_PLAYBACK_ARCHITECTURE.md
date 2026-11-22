@@ -275,3 +275,42 @@ A fresh read-only inspection of the current PWA `js/audio-engine.js`, `js/state.
 The proposed “one direct remote audio item” spike is not currently an end-to-end PWA feature path. Before integrating Media3, either (a) prove a narrowly scoped Android-only demo/test source with an explicit test-only UI and keep it out of the production feature claim, or (b) first define a genuine user-facing source type in the existing product requirements. Do not silently invent a new source type or label it as preserving an existing PWA feature. The safer current next step is to finish a source/command mapping and a generated-bundle adapter design, then choose a POC that can be tested without changing the PWA repository.
 
 This update is based on source inspection only. No PWA file, Android playback source, dependency, manifest permission, or APK was changed or built.
+
+
+## Implementation update — Android radio Media3 POC code added (22 November 2026)
+
+This section supersedes the earlier planning-only status above. The first scoped implementation has been committed to the Android repository. It is **source implementation only** at this point: no new APK build or runtime/device test has yet been performed.
+
+### Implemented in the Android repository
+
+- Added RadioPlaybackService.kt with one native ExoPlayer and one MediaSession hosted by MediaSessionService.
+- Added Media3 1.11.1 ExoPlayer and Session dependencies consistently.
+- Declared the media playback foreground-service type and required foreground-service permissions.
+- Configured ExoPlayer to handle Android audio focus and pause automatically when the audio route becomes noisy (for example, headset unplug).
+- Restricted external MediaSession player commands to play/pause and read-only current-item, metadata and timeline access. No seek, playlist mutation, next or previous commands are exposed in this first POC.
+- Added RadioBridge.kt using AndroidX WebKit WebViewCompat.addWebMessageListener() with the exact https://appassets.androidplatform.net origin, main-frame check, strict version/command/key schema, 16 KiB message limit, volume bounds and station allowlist.
+- Native radio accepts only the 12 existing PWA station IDs paired with their exact verified HTTPS stream URLs. Artwork is limited to the existing images.unsplash.com host.
+- Added a generated-bundle adapter and patcher under scripts/. The workflow patches only the temporary viora-source/ checkout; the original prem-pk-dev/VILORA repository remains read-only.
+- The adapter routes only the existing live-radio path to Media3. It pauses and clears WebView audio elements before native radio starts. Switching to YouTube or local/custom playback waits for a radio.stopped acknowledgement before WebView playback begins.
+- Added a fixture test for the deterministic patcher, including duplicate-run rejection.
+- Added a Web MediaSession ownership handoff: while native radio owns playback, the generated Android bundle suppresses the competing WebView MediaSession metadata/actions; after native radio stops, the WebView handlers are restored. This avoids two competing system media sessions for one radio item.
+- The native service stores the selected station descriptor in app-private preferences so the WebView can request a snapshot and resume a paused station after Activity/WebView or service recreation. This is not yet runtime-verified.
+
+### Intentionally unchanged
+
+- YouTube IFrame playback remains in WebView.
+- Standard HTMLAudio/Web Audio, local/custom playback, the 10-band EQ, effects and visualizer remain in their existing PWA paths.
+- No PWA source file has been changed.
+- No API key or GitHub token has been added to the APK.
+- No automatic service start occurs at app launch; native radio starts only after a user selects a station.
+
+### Verification status
+
+- [ ] Run the manual GitHub Actions workflow once after the implementation batch is complete.
+- [ ] Inspect the built APK and verify the service, permissions, bridge and bundled adapter.
+- [ ] Verify all 12 station routes, install/launch, radio play/pause/resume, native notification and lock-screen controls, audio focus, headphone unplug, service recreation, WebView recreation and source handoff on a real device/emulator.
+- [ ] Verify that YouTube/local/custom playback never overlaps native radio.
+- [ ] Verify Android 15+ edge-to-edge layout.
+- [ ] Only after build/static checks pass, verify BrowserStack's actual free quota and 30-minute policy before starting any session. Do not use paid time, trials or billing.
+
+Current state: code committed; build and runtime verification pending. Maintain the ₹0 budget and preserve the BrowserStack free allowance until the test session is fully prepared.
