@@ -55,6 +55,13 @@ Do not mark the Android build complete until the following checks are performed 
 - [ ] Android-only generated-bundle patch checks fail closed if expected PWA bundle anchors change; original PWA repo remains untouched.
 - [ ] No Media3 implementation is accepted until a genuine supported source type and rollback path are documented.
 
+## Native bridge security checks
+
+- [ ] Privileged playback commands are not added to the existing unrestricted `addJavascriptInterface` object.
+- [ ] `WebMessageListener` is restricted to `https://appassets.androidplatform.net`; wildcard rules are forbidden.
+- [ ] Messages from non-main frames, third-party origins, malformed JSON, oversized payloads, unknown versions, commands, source types, and URL schemes are rejected.
+- [ ] If `WEB_MESSAGE_LISTENER` is unsupported by the installed WebView, native command integration fails closed and does not fall back to a privileged JavaScript interface.
+
 ## Stability and security
 - [ ] External top-level links open outside the app; embedded YouTube and remote media still work.
 - [ ] No mixed-content or JavaScript bridge security warnings.
