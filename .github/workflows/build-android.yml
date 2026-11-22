@@ -53,6 +53,33 @@ jobs:
           cp viora-source/js/immersive-motion.js viora-source/dist/js/immersive-motion.js
           test -s viora-source/dist/js/immersive-motion.js
 
+      - name: Remove stale offline precache paths from Android bundle
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const dist = path.resolve("viora-source/dist");
+          const swPath = path.join(dist, "sw.js");
+          if (!fs.existsSync(swPath)) throw new Error("Expected PWA service worker at dist/sw.js");
+          const source = fs.readFileSync(swPath, "utf8");
+          const match = source.match(/const APP_SHELL = \[([\s\S]*?)\];/);
+          if (!match) throw new Error("Could not locate APP_SHELL in PWA service worker");
+          const configured = [...match[1].matchAll(/"([^"]+)"/g)].map((entry) => entry[1]);
+          configured.push("/js/immersive-motion.js");
+          const existing = [...new Set(configured)].filter((asset) => {
+            const relative = asset === "/" ? "index.html" : asset.replace(/^\/+/, "");
+            return fs.existsSync(path.join(dist, relative));
+          });
+          if (!existing.includes("/index.html")) throw new Error("Offline shell is missing index.html");
+          const replacement = "const APP_SHELL = [\n" +
+            existing.map((asset) => "  " + JSON.stringify(asset)).join(",\n") +
+            "\n];";
+          fs.writeFileSync(swPath, source.replace(match[0], replacement));
+          console.log("Android offline precache: " + existing.length + " existing assets retained; " +
+            (configured.length - existing.length) + " stale paths removed.");
+          NODE
+
       - name: Bundle PWA build and exact launcher icon
         shell: bash
         run: |
@@ -64,6 +91,7 @@ jobs:
           cp viora-source/public/icons/icon-512.png app/src/main/res/drawable-nodpi/viora_icon.png
           test -f app/src/main/assets/index.html
           test -f app/src/main/assets/js/immersive-motion.js
+          test -f app/src/main/assets/sw.js
           test -f app/src/main/res/drawable-nodpi/viora_icon.png
 
       - name: Set up Java 17
