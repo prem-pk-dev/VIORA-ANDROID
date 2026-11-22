@@ -112,6 +112,7 @@ The page-to-native message object is JSON with a strict 16 KiB maximum and exact
 - `radio.play`: `stationId`, `streamUrl`, `title`, `artist`, `artworkUrl`, `bitrate`.
 - `radio.pause`: no additional fields.
 - `radio.resume`: no additional fields.
+- `radio.stop`: no additional fields; clears the current native media item and session metadata.
 - `radio.setVolume`: `volume` in [0, 1].
 - `radio.getSnapshot`: no additional fields.
 
@@ -128,7 +129,7 @@ No event is allowed to invoke `playRadio()` or mutate the PWA queue. It updates 
 ### Native service ownership and transitions
 - On `radio.play`, native code validates the HTTPS URL and station descriptor, stops/clears any prior native item, and starts the MediaSessionService with an explicit action and bounded extras.
 - The Android adapter first pauses and clears the WebView `radioAudio` element; only after native acceptance does it mark native radio as owner. If native startup fails, surface a controlled error; do not silently start a second player.
-- When the user selects YouTube or local/custom audio, the Android adapter sends `radio.pause` and waits for the native service to confirm stopped/paused before the existing PWA source starts.
+- When the user selects YouTube or local/custom audio, the Android adapter sends `radio.stop` and waits for the native service to confirm stopped/cleared before the existing PWA source starts.
 - The first native MediaSession exposes play and pause only. Do not expose seek, previous or next commands in the native session for this spike. The in-app radio station picker may still select another station through a new validated `radio.play` command.
 - Native player volume follows the PWA volume/mute state; no independent Android-only volume slider is introduced.
 - On Activity/WebView recreation, request the native snapshot. Never store an Activity or WebView reference in the service.
