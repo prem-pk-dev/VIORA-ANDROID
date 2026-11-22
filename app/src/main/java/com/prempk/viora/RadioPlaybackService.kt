@@ -22,17 +22,19 @@ class RadioPlaybackService : MediaSessionService() {
         player = ExoPlayer.Builder(this).build()
         RadioPlaybackState.commandSink = { action, volume ->
             when (action) {
-                ACTION_PAUSE -> player.pause()
-                ACTION_RESUME -> if (player.mediaItemCount > 0) player.play()
-                ACTION_STOP -> stopAndClear()
-                ACTION_VOLUME -> if (volume != null) {
-                    player.volume = volume.coerceIn(0f, 1f)
-                    RadioPlaybackState.volume = player.volume
-                    publishState()
+                ACTION_PAUSE -> { player.pause(); true }
+                ACTION_RESUME -> { if (player.mediaItemCount > 0) player.play(); true }
+                ACTION_STOP -> { stopAndClear(); true }
+                ACTION_VOLUME -> {
+                    if (volume == null) false else {
+                        player.volume = volume.coerceIn(0f, 1f)
+                        RadioPlaybackState.volume = player.volume
+                        publishState()
+                        true
+                    }
                 }
-                else -> return@commandSink false
+                else -> false
             }
-            true
         }
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
