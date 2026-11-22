@@ -16,9 +16,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.CookieManager
 import androidx.webkit.WebViewAssetLoader
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
@@ -35,12 +33,12 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // targetSdk 35 enforces edge-to-edge on Android 15+. Apply the system
-        // safe area to the WebView itself so the existing PWA UI is not hidden
-        // behind status/navigation bars or display cutouts.
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
+        // Keep Android system bars outside the WebView viewport. The PWA uses
+        // a full-height CSS app shell with its own fixed header/player/navigation;
+        // drawing that shell edge-to-edge caused status-bar and gesture-area overlap.
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.statusBarColor = Color.rgb(11, 12, 16)
+        window.navigationBarColor = Color.rgb(11, 12, 16)
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
 
         webView = WebView(this)
@@ -48,15 +46,7 @@ class MainActivity : Activity() {
         // If the installed WebView lacks this feature, the Android radio adapter remains disabled.
         radioBridge = RadioBridge(this, webView).also { it.install() }
         webView.setBackgroundColor(Color.rgb(5, 7, 20))
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
-            val safeInsets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            view.setPadding(safeInsets.left, safeInsets.top, safeInsets.right, safeInsets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
         setContentView(webView)
-        ViewCompat.requestApplyInsets(webView)
 
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
