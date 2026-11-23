@@ -145,8 +145,8 @@ jobs:
             echo "::error::Android radio adapter marker missing from generated PWA bundle."
             exit 1
           fi
-          if ! grep -Rqs "VIORA_ANDROID_MUSIC_MEDIA_SESSION_V1" dist/assets; then
-            echo "::error::Android native music MediaSession adapter missing from generated PWA bundle."
+          if ! grep -Rqs "viora-native-music-action" dist/assets; then
+            echo "::error::Android native music MediaSession action bridge missing from generated PWA bundle."
             exit 1
           fi
           if ! grep -Rqs "viora-native-radio-mode" dist/assets; then
