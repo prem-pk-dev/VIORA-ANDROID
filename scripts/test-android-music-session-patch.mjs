@@ -18,11 +18,15 @@ export function initMediaSession() {
     if (!song) return;
     navigator.mediaSession.metadata = new MediaMetadata({ title: song.title });
   };
+  const actionHandlers = new Map();
+  let nativeRadioMode = false;
   const registerAction = (action, handler) => {
+    actionHandlers.set(action, handler);
+    if (nativeRadioMode) return;
     try {
       navigator.mediaSession.setActionHandler(action, handler);
     } catch (e) {
-      console.debug(`Media Session action not supported: ${action}`);
+      console.debug("Media Session action not supported: " + action);
     }
   };
   registerAction("play", () => audioEngine.play());
@@ -39,7 +43,7 @@ export function initMediaSession() {
       try { navigator.mediaSession.setPositionState({ duration, position: currentTime }); } catch (e) {}
     }
   });
-  if (state.currentSong) {
+  if (!nativeRadioMode && state.currentSong) {
     updateMetadata(state.currentSong);
   }
 }
