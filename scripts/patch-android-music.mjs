@@ -18,7 +18,7 @@ ui=once(ui,"            YouTube Music\n          </button>","            VIORA M
 ui=once(ui,"                  YouTube Music\n                </h3>\n                <span id=\"yt-loading-indicator\" style=\"font-size:0.8rem;color:var(--color-text-muted);\">Searching YouTube...</span>","                  VIORA Music\n                </h3>\n                <span id=\"yt-loading-indicator\" style=\"font-size:0.8rem;color:var(--color-text-muted);\">Searching music providers...</span>","Search results heading");
 ui=once(ui,"Load More YouTube Tracks","Load More Tracks","Load more label");
 const start=ui.indexOf("      // 2. Query YouTube Data API");
-const end=ui.indexOf("\n      }\n    };\n\n    input?.addEventListener",start);
+const end=ui.indexOf("\n    };\n\n    input?.addEventListener",start);
 if(start<0||end<0) throw new Error("Could not locate bounded online search block");
 const replacement=`      // VIORA India-first waterfall search: JioSaavn -> Piped -> Audius.
       if (activeFilter === "all" || activeFilter === "youtube") {
