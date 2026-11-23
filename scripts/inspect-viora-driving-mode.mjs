@@ -6,7 +6,8 @@ const ignored = new Set(["node_modules","dist",".git","coverage","build"]);
 const exts = new Set([".js",".mjs",".cjs",".ts",".html",".css"]);
 const patterns = [
   ["driving-mode", /driving.?mode|drive.?mode|drivingMode|driveMode|carMode|hands.?free|road.?mode/gi],
-  ["voice-assistant", /SpeechRecognition|webkitSpeechRecognition|speechSynthesis|voice.?command|assistant.?mode|ai.?assistant|microphone|mic.?btn|voice.?input/gi],\n  ["driving-ui-css", /viora-driving|viora-expansion/gi]
+  ["voice-assistant", /SpeechRecognition|webkitSpeechRecognition|speechSynthesis|voice.?command|assistant.?mode|ai.?assistant|microphone|mic.?btn|voice.?input/gi],
+  ["driving-ui-css", /viora-driving|viora-expansion/gi]
 ];
 const files=[];
 function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(e.isDirectory()){if(!ignored.has(e.name))walk(path.join(dir,e.name));}else if(exts.has(path.extname(e.name)))files.push(path.join(dir,e.name));}}
