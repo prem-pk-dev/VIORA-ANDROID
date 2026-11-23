@@ -19,7 +19,7 @@ assert(source.includes("trackIdentity: { trackName: song.title, artistName: song
 assert(source.includes("if (cachedById && !cachedById.trackIdentity) delete this.customLyricsCache[songId];"), "Legacy unverified cache entries must be invalidated");
 assert(!source.includes("strictDemoTitles"), "Title-only built-in demo lookup remains enabled");
 assert(source.includes('if (!state.currentSong || state.currentSong.id !== songId) return;'), "Stale async lyrics render guard missing");
-assert(source.includes('if (state.currentSong && state.currentSong.id !== songId) return;'), "Stale container render guard missing");
+assert(source.includes('if (state.currentSong && state.currentSong.id !== songId) { container.innerHTML = ""; return; }'), "Stale container render guard missing");
 
 const match = source.match(/  lyricsMatchScore\(record, song, expectedDuration = 0\) \{[\s\S]*?\n  \}/);
 assert(match, "Cannot extract lyrics matcher for behavior tests");
