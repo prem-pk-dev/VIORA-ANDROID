@@ -10,7 +10,13 @@ function withTimeout(url, options = {}, ms = 5000) {
   const timer = setTimeout(() => controller.abort(), ms);
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
-function providerCall(promise, ms = 5000) {\n  return new Promise((resolve, reject) => {\n    const timer = setTimeout(() => reject(new Error("provider timeout after " + ms + "ms")), ms);\n    Promise.resolve(promise).then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });\n  });\n}\nfunction text(value, fallback = "") { return typeof value === "string" && value.trim() ? value.trim() : fallback; }
+function providerCall(promise, ms = 5000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("provider timeout after " + ms + "ms")), ms);
+    Promise.resolve(promise).then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });
+  });
+}
+function text(value, fallback = "") { return typeof value === "string" && value.trim() ? value.trim() : fallback; }
 function duration(value) { const n = Number(value); return Number.isFinite(n) && n > 0 ? n : 0; }
 function bestSaavnUrl(list) {
   if (!Array.isArray(list)) return "";
