@@ -28,8 +28,8 @@ media = once(media,
   '  state.subscribe("playbackStateChanged", (isPlaying) => {\n    if (isAndroidShell()) { publishNative(state.currentSong, isPlaying); return; }\n    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";\n  });',
   "native playback state");
 media = once(media,
-  '  state.subscribe("timeUpdate", ({ currentTime, duration }) => {\n    if ("setPositionState" in navigator.mediaSession',
-  '  state.subscribe("timeUpdate", ({ currentTime, duration }) => {\n    if (isAndroidShell()) return;\n    if ("setPositionState" in navigator.mediaSession',
+  '  state.subscribe("timeUpdate", ({ currentTime, duration }) => {\n    if (!nativeRadioMode && "setPositionState" in navigator.mediaSession',
+  '  state.subscribe("timeUpdate", ({ currentTime, duration }) => {\n    if (isAndroidShell() || nativeRadioMode) return;\n    if ("setPositionState" in navigator.mediaSession',
   "native position suppression");
 media = once(media,
   '  if (!nativeRadioMode && state.currentSong) {\n    updateMetadata(state.currentSong);\n  }',
