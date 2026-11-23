@@ -131,7 +131,7 @@ class IndiaMusicEngine {
     const errors = [];
     for (const provider of PROVIDERS) {
       try {
-        const items = await this.searchProvider(provider, q, limit);
+        const items = await Promise.race([\n          this.searchProvider(provider, q, limit),\n          new Promise((_, reject) => setTimeout(() => reject(new Error("provider timeout after 5000ms")), 5000))\n        ]);
         if (items.length) return { items, provider, errors };
         errors.push(provider + ":empty");
       } catch (e) { errors.push(provider + ":" + String(e?.message || "failed")); }
