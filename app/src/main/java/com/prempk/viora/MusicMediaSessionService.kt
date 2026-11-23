@@ -13,7 +13,6 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
 
 /**
  * System-control proxy for WebView-owned ordinary music.
@@ -110,22 +109,23 @@ class MusicMediaSessionService : Service() {
         val playPause = actionIntent(if (playing) ACTION_PAUSE else ACTION_PLAY, 11)
         val previous = actionIntent(ACTION_PREVIOUS, 12)
         val next = actionIntent(ACTION_NEXT, 13)
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = Notification.Builder(this)
             .setSmallIcon(R.drawable.viora_icon)
             .setContentTitle(session.controller.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "VIORA")
             .setContentText(session.controller.metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: "Music playback")
             .setContentIntent(openApp)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOnlyAlertOnce(true)
             .setOngoing(playing)
-            .addAction(NotificationCompat.Action(android.R.drawable.ic_media_previous, "Previous", previous))
-            .addAction(NotificationCompat.Action(
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_previous, "Previous", previous).build())
+            .addAction(Notification.Action.Builder(
                 if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
                 if (playing) "Pause" else "Play", playPause
-            ))
-            .addAction(NotificationCompat.Action(android.R.drawable.ic_media_next, "Next", next))
+            ).build())
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_next, "Next", next).build())
             .setStyle(MediaStyle().setMediaSession(session.sessionToken).setShowActionsInCompactView(0, 1, 2))
-            .build()
+        if (Build.VERSION.SDK_INT >= 26) builder.setChannelId(CHANNEL_ID)
+        return builder.build()
     }
 
     private fun actionIntent(action: String, requestCode: Int): PendingIntent =
