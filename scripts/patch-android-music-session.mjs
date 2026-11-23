@@ -21,7 +21,7 @@ media = once(media,
   "Android native metadata routing");
 media = once(media,
   '  const registerAction = (action, handler) => {\n    actionHandlers.set(action, handler);\n    if (nativeRadioMode) return;\n    try {\n      navigator.mediaSession.setActionHandler(action, handler);',
-  '  const registerAction = (action, handler) => {\n    nativeActions.set(({ play: "play", pause: "pause", nexttrack: "next", previoustrack: "previous", seekto: "seek" })[action] || action, handler);\n    if (isAndroidShell()) return;\n    try {\n      navigator.mediaSession.setActionHandler(action, handler);',
+  '  const registerAction = (action, handler) => {\n    nativeActions.set(({ play: "play", pause: "pause", nexttrack: "next", previoustrack: "previous", seekto: "seek" })[action] || action, handler);\n    actionHandlers.set(action, handler);\n    if (isAndroidShell() || nativeRadioMode) return;\n    try {\n      navigator.mediaSession.setActionHandler(action, handler);',
   "native transport handler routing");
 media = once(media,
   '  state.subscribe("playbackStateChanged", (isPlaying) => {\n    if (!nativeRadioMode) navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";\n  });',
