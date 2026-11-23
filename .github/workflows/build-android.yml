@@ -97,6 +97,12 @@ jobs:
           node --check scripts/inspect-viora-driving-mode.mjs
           node scripts/test-india-music-engine.mjs
 
+      - name: Test Android driving mode and voice assistant patch
+        run: |
+          node --check scripts/patch-android-driving.mjs
+          node --check scripts/test-android-driving-patch.mjs
+          node scripts/test-android-driving-patch.mjs
+
       - name: Apply Android-only radio and India music adapters to temporary PWA checkout
         run: |
           node scripts/patch-android-radio.mjs viora-source
@@ -107,6 +113,8 @@ jobs:
           test -s viora-source/android-india-music-patch-report.json
           node scripts/patch-android-lyrics.mjs viora-source
           test -s viora-source/android-lyrics-patch-report.json
+          node scripts/patch-android-driving.mjs viora-source
+          test -s viora-source/android-driving-patch-report.json
 
       - name: Validate patched JavaScript syntax
         run: |
@@ -116,6 +124,8 @@ jobs:
           node --check viora-source/js/player.js
           node --check viora-source/js/india-music-engine.js
           node --check viora-source/js/lyrics.js
+          node --check viora-source/js/expansion.js
+          node --check viora-source/js/android-driving-voice.js
 
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
