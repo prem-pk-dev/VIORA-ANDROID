@@ -48,6 +48,11 @@ const helper = [
 "  }"
 ].join("\n");
 source = once(source, '  async clientFallbackFetch(cleanTitle, cleanArtist, duration, song) {', helper + '\n\n  async clientFallbackFetch(cleanTitle, cleanArtist, duration, song) {', "lyrics matcher method");
+const demoTitleStart = source.indexOf("    const target = cleanTitle.toLowerCase().trim();", source.indexOf("  findMatchingDemoLyrics("));
+const demoTitleEnd = source.indexOf("    return null;", demoTitleStart);
+if (demoTitleStart < 0 || demoTitleEnd < 0) throw new Error("Demo title-only fallback block not found");
+source = source.slice(0, demoTitleStart) + "    // Android: only exact built-in demo IDs may use demo lyrics; title-only matches can be another recording.\\n" + source.slice(demoTitleEnd);
+
 source = once(source,
 '    // 3. Check custom cache by clean title\n    if (cleanTitle && this.customLyricsCache[cleanTitle.toLowerCase()] && !this.customLyricsCache[cleanTitle.toLowerCase()].notFound && this.customLyricsCache[cleanTitle.toLowerCase()].lines?.length > 0) {\n      return this.customLyricsCache[cleanTitle.toLowerCase()];\n    }',
 '',
