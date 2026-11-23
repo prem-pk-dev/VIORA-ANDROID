@@ -20,11 +20,11 @@ media = once(media,
   '  const isAndroidShell = () => { try { return window.VioraAndroid?.isAndroidApp?.() === true && typeof window.VioraNative?.postMessage === "function"; } catch (_) { return false; } };\n  const nativeActions = new Map();\n  let nativeRequest = 0;\n  const sendNative = (command, fields = {}) => { if (!isAndroidShell()) return; try { window.VioraNative.postMessage(JSON.stringify({ version: 1, requestId: "viora-music-" + (++nativeRequest), command, ...fields })); } catch (_) {} };\n  const publishNative = (song = state.currentSong, playing = state.isPlaying) => { if (!song || song.source === "radio" || state.isStream) return; sendNative("music.update", { title: song.title || "Unknown Title", artist: song.artist || "Unknown Artist", album: song.album || "VIORA", playing: Boolean(playing), duration: Number.isFinite(Number(song.duration)) ? Math.max(0, Math.min(86400000, Number(song.duration) * 1000)) : 0 }); };\n  window.addEventListener("viora-native-music-action", (event) => { const action = event.detail?.action; const handler = nativeActions.get(action); if (handler) handler(action === "seek" ? { seekTime: Number(event.detail?.position || 0) / 1000 } : {}); });\n  const updateMetadata = (song) => {\n    if (!song) return;\n    if (isAndroidShell()) { publishNative(song); return; }',
   "Android native metadata routing");
 media = once(media,
-  '  const registerAction = (action, handler) => {\n    try {\n      navigator.mediaSession.setActionHandler(action, handler);',
+  '  const registerAction = (action, handler) => {\n    actionHandlers.set(action, handler);\n    if (nativeRadioMode) return;\n    try {\n      navigator.mediaSession.setActionHandler(action, handler);',
   '  const registerAction = (action, handler) => {\n    nativeActions.set(({ play: "play", pause: "pause", nexttrack: "next", previoustrack: "previous", seekto: "seek" })[action] || action, handler);\n    if (isAndroidShell()) return;\n    try {\n      navigator.mediaSession.setActionHandler(action, handler);',
   "native transport handler routing");
 media = once(media,
-  '  state.subscribe("playbackStateChanged", (isPlaying) => {\n    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";\n  });',
+  '  state.subscribe("playbackStateChanged", (isPlaying) => {\n    if (!nativeRadioMode) navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";\n  });',
   '  state.subscribe("playbackStateChanged", (isPlaying) => {\n    if (isAndroidShell()) { publishNative(state.currentSong, isPlaying); return; }\n    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";\n  });',
   "native playback state");
 media = once(media,
@@ -32,7 +32,7 @@ media = once(media,
   '  state.subscribe("timeUpdate", ({ currentTime, duration }) => {\n    if (isAndroidShell()) return;\n    if ("setPositionState" in navigator.mediaSession',
   "native position suppression");
 media = once(media,
-  '  if (state.currentSong) {\n    updateMetadata(state.currentSong);\n  }',
+  '  if (!nativeRadioMode && state.currentSong) {\n    updateMetadata(state.currentSong);\n  }',
   '  if (state.currentSong) {\n    updateMetadata(state.currentSong);\n    if (isAndroidShell()) publishNative(state.currentSong, state.isPlaying);\n  }\n  // ' + marker,
   "native initial metadata");
 adapter = once(adapter,
