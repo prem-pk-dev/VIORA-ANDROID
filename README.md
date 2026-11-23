@@ -48,7 +48,7 @@ The workflow is manual-only so normal commits do not consume GitHub Actions minu
 - Workflow fixes for the missing immersive-motion script and Android-only service-worker precache filtering are committed but have not yet been verified in a new APK.
 - Android 15 edge-to-edge inset handling is committed but still needs emulator/device visual testing, including keyboard/IME behavior.
 - YouTube direct-HTML fallback currently has no continuation token when no secure YouTube Data API key is configured. Do not fabricate pagination tokens or embed an API key in the APK.
-- Native background playback, MediaSession, notification/lock-screen controls, audio focus, and headphone controls are not implemented or verified. Preserve the existing Web Audio / HTMLAudio / YouTube playback architecture; do not add a second independent player without a proven synchronization design.
+- A native Media3 `MediaSessionService` exists for **live radio only**. Standard online/local tracks and YouTube still use their existing WebView/PWA playback paths; do not assume they have native lock-screen controls. Radio controls and ordinary-track background/lock-screen behavior still require separate real-device verification. Preserve single-owner playback and do not add a competing player without a proven synchronization design.
 - The current test checklist is in [docs/ANDROID_TEST_PLAN.md](docs/ANDROID_TEST_PLAN.md).
 - The proposed native audio/Media3 integration contract and migration gates are in [docs/ANDROID_PLAYBACK_ARCHITECTURE.md](docs/ANDROID_PLAYBACK_ARCHITECTURE.md).
 
