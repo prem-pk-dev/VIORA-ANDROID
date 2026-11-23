@@ -14,7 +14,7 @@ function once(input, oldText, newText, label) {
   if (count !== 1) throw new Error(label + ": expected one exact anchor, found " + count);
   return input.replace(oldText, newText);
 }
-source = once(source, "function renderDrivingMode() {", 'import "./android-driving-voice.js";\n\nfunction renderDrivingMode() {', "native voice adapter import");
+source = once(source, "function renderDrivingMode() {", '// VIORA_ANDROID_DRIVING_ASSISTANT_V1\nimport "./android-driving-voice.js";\n\nfunction renderDrivingMode() {', "native voice adapter import");
 const tick = String.fromCharCode(96);
 const start = source.indexOf("  overlay.innerHTML = " + tick);
 const end = source.indexOf(tick + ";", start);
