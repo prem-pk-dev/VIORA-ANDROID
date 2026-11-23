@@ -138,7 +138,10 @@ const method=`  playOnlineTrack(song) {
 audio=once(audio,methodAnchor,method+methodAnchor,"Online stream playback methods");
 audio=once(audio,'    this.htmlAudio.addEventListener("error", (e) => {\n      if (state.isStream || state.currentSong?.source === "radio") return;','    this.htmlAudio.addEventListener("error", (e) => {\n      if (state.currentSong?.source === "online") { this.recoverOnlinePlayback(state.currentSong, this.onlinePlaybackToken); return; }\n      if (state.isStream || state.currentSong?.source === "radio") return;',"Online stream error recovery");
 state=once(state,'    const isRealTrackId = (id) => localTrackIds.has(id) ||\n      (typeof id === "string" && id.startsWith("youtube:"));','    const isRealTrackId = (id) => localTrackIds.has(id) ||\n      (typeof id === "string" && (id.startsWith("youtube:") || id.startsWith("online:")));',"Persist online favorites/history");
-state=once(state,'          track.source === "youtube" ||\n          (typeof track.id === "string" && track.id.startsWith("youtube:"))','          track.source === "youtube" ||\n          track.source === "online" ||\n          (typeof track.id === "string" && (track.id.startsWith("youtube:") || track.id.startsWith("online:")))','Persist online queue");
+state=once(state,`          track.source === "youtube" ||
+          (typeof track.id === "string" && track.id.startsWith("youtube:"))`,`          track.source === "youtube" ||
+          track.source === "online" ||
+          (typeof track.id === "string" && (track.id.startsWith("youtube:") || track.id.startsWith("online:")))`,"Persist online queue");
 player=once(player,'      } else if (isYouTube) {','      } else if (isYouTube) {',"Player badge anchor");
 player=once(player,'      } else if (isLocal) {','      } else if (song.source === "online") {\n        const provider = String(song.sourceProvider || "online").toUpperCase();\n        sourceBadge = `<span class="badge-pill" style="background:rgba(34,197,94,.16);color:#22c55e;border:1px solid rgba(34,197,94,.3);">${provider}</span>`;\n      } else if (isLocal) {','Online provider badge');
 write("js/ui.js",ui);write("js/audio-engine.js",audio);write("js/state.js",state);write("js/player.js",player);
