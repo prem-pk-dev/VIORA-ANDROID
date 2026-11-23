@@ -14,7 +14,7 @@ function once(input, oldText, newText, label) {
   if (count !== 1) throw new Error(label + ": expected one exact anchor, found " + count);
   return input.replace(oldText, newText);
 }
-source = once(source, "function renderDrivingMode() {", '// VIORA_ANDROID_DRIVING_ASSISTANT_V1\nimport "./android-driving-voice.js";\n\nfunction renderDrivingMode() {', "native voice adapter import");
+source = once(source, "function renderDrivingMode() {", '// VIORA_ANDROID_DRIVING_ASSISTANT_V1\nimport "./android-driving-voice.js";\nlet vioraDrivingLanguage = "en-IN";\n\nfunction renderDrivingMode() {', "native voice adapter import");
 const tick = String.fromCharCode(96);
 const start = source.indexOf("  overlay.innerHTML = " + tick);
 const end = source.indexOf(tick + ";", start);
@@ -35,7 +35,7 @@ const markup = [
 "      <button type=\"button\" id=\"viora-driving-next\" aria-label=\"Next track\">⏭</button>",
 "    </div>",
 "    <section class=\"viora-driving-assistant\">",
-"      <div class=\"viora-driving-assistant-heading\"><div><strong>VIORA Voice Assistant</strong><span>Hands-free playback controls</span></div><span class=\"viora-driving-mic-icon\">🎙</span></div>",
+"      <div class=\"viora-driving-assistant-heading\"><div><strong>VIORA Voice Assistant</strong><span>Hands-free playback controls</span></div><button type=\"button\" id=\"viora-driving-language\" class=\"viora-driving-language\">EN • हिंदी</button><span class=\"viora-driving-mic-icon\">🎙</span></div>",
 "      <div class=\"viora-driving-voice-status\" id=\"viora-driving-voice-status\" aria-live=\"polite\">Voice control is ready</div>",
 "      <button type=\"button\" id=\"viora-driving-voice\" class=\"viora-exp-btn viora-exp-btn-secondary\">Start voice control</button>",
 "      <div class=\"viora-driving-command-hints\"><span>“Play”</span><span>“Pause”</span><span>“Next song”</span><span>“Previous”</span><span>“घर खोलो”</span></div>",
@@ -44,6 +44,14 @@ const markup = [
 "  " + tick + ";"
 ].join("\n");
 source = source.slice(0, start) + markup + source.slice(end + 2);
+source = once(source,
+'  overlay.querySelector("#viora-driving-voice").addEventListener("click", startVoiceControl);',
+'  overlay.querySelector("#viora-driving-voice").addEventListener("click", startVoiceControl);\n  overlay.querySelector("#viora-driving-language")?.addEventListener("click", event => {\n    vioraDrivingLanguage = vioraDrivingLanguage === "en-IN" ? "hi-IN" : "en-IN";\n    event.currentTarget.textContent = vioraDrivingLanguage === "en-IN" ? "EN • हिंदी" : "हिंदी • EN";\n    const status = document.getElementById("viora-driving-voice-status");\n    if (status) status.textContent = "Voice language: " + (vioraDrivingLanguage === "en-IN" ? "English (India)" : "हिंदी");\n  });',
+"Driving voice language selector");
+source = once(source,
+'  recognition = new SpeechRecognition();\n  recognition.lang = "en-IN";',
+'  recognition = new SpeechRecognition();\n  recognition.lang = vioraDrivingLanguage;',
+"Driving voice recognition language");
 const oldUpdate = [
 "  const updateTrack = () => {",
 "    const song = state.currentSong;",
@@ -148,7 +156,7 @@ css += `
 .viora-driving-controls button { box-shadow:0 10px 28px rgba(0,0,0,.24); border-color:rgba(255,255,255,.12) !important; }
 .viora-driving-controls .viora-driving-main { box-shadow:0 12px 36px rgba(0,220,255,.26); }
 .viora-driving-assistant { width:min(100%,520px); margin:0 auto; padding:16px; border:1px solid rgba(83,223,244,.2); border-radius:20px; background:linear-gradient(145deg,rgba(18,33,55,.94),rgba(10,18,32,.94)); box-shadow:0 18px 48px rgba(0,0,0,.22); }
-.viora-driving-assistant-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.viora-driving-assistant-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }\n.viora-driving-language { padding:8px 10px; border-radius:999px; border:1px solid rgba(83,223,244,.3); background:rgba(83,223,244,.1); color:#a9eaf3; font-size:.7rem; font-weight:900; white-space:nowrap; }
 .viora-driving-assistant-heading > div { display:grid; gap:4px; }
 .viora-driving-assistant-heading strong { font-size:1rem; }
 .viora-driving-assistant-heading span { color:rgba(255,255,255,.56); font-size:.75rem; }
