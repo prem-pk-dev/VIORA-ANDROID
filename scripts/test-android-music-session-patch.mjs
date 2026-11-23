@@ -32,10 +32,10 @@ export function initMediaSession() {
   registerAction("seekto", (details) => audioEngine.seek(details.seekTime));
   state.subscribe("songChanged", (song) => updateMetadata(song));
   state.subscribe("playbackStateChanged", (isPlaying) => {
-    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+    if (!nativeRadioMode) navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
   });
   state.subscribe("timeUpdate", ({ currentTime, duration }) => {
-    if ("setPositionState" in navigator.mediaSession && duration > 0 && currentTime <= duration) {
+    if (!nativeRadioMode && "setPositionState" in navigator.mediaSession && duration > 0 && currentTime <= duration) {
       try { navigator.mediaSession.setPositionState({ duration, position: currentTime }); } catch (e) {}
     }
   });
