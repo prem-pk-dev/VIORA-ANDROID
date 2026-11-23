@@ -46,7 +46,7 @@ const replacement=`      // VIORA India-first waterfall search: JioSaavn -> Pipe
               '<button class="btn-secondary vi-queue">＋ Queue</button><button class="icon-btn vi-fav">' +
               (state.isFavorite(track.id) ? ICONS.heartFilled : ICONS.heart) + '</button></div></div>';
             const art = card.querySelector(".vi-art");
-            if (/^https:\/\//i.test(String(track.artwork || ""))) art.src = track.artwork;
+            if (String(track.artwork || "").startsWith("https://")) art.src = track.artwork;
             card.querySelector(".vi-title").textContent = track.title || "Unknown track";
             card.querySelector(".vi-meta").textContent = (track.artist || "Unknown artist") + " · " + (track.sourceProvider || "online");
             const play = () => {
