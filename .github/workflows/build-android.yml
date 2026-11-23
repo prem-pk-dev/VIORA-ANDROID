@@ -81,6 +81,14 @@ jobs:
           test -s viora-source/js/india-music-engine.js
           test -s viora-source/android-india-music-patch-report.json
 
+      - name: Validate patched JavaScript syntax
+        run: |
+          node --check viora-source/js/ui.js
+          node --check viora-source/js/audio-engine.js
+          node --check viora-source/js/state.js
+          node --check viora-source/js/player.js
+          node --check viora-source/js/india-music-engine.js
+
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
         run: |
