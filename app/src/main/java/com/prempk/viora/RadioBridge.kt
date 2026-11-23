@@ -139,6 +139,8 @@ internal class RadioBridge(
                     }
                     // Mark the requested owner before dispatch so an immediate source switch
                     // queues radio.stop behind radio.play even while the service is starting.
+                    // The radio Media3 session and ordinary WebAudio control proxy are exclusive.
+                    MusicMediaSessionService.stop(context)
                     RadioPlaybackState.stationId = stationId
                     RadioPlaybackState.title = title
                     RadioPlaybackState.artist = artist
