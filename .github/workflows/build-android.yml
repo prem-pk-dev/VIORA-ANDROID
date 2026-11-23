@@ -111,6 +111,7 @@ jobs:
           test -s viora-source/android-india-music-patch-report.json
           node scripts/patch-android-lyrics.mjs viora-source
           test -s viora-source/android-lyrics-patch-report.json
+          node scripts/test-android-lyrics-patch.mjs viora-source
           node scripts/patch-android-driving.mjs viora-source
           test -s viora-source/android-driving-patch-report.json
 
