@@ -139,7 +139,6 @@ class MusicMediaSessionService : Service() {
             session.isActive = false
             session.release()
         }
-        MusicMediaSessionState.eventSink = null
         super.onDestroy()
     }
 
