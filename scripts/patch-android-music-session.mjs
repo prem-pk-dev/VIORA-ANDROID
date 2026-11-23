@@ -16,6 +16,10 @@ function once(source, anchor, replacement, label) {
   return source.replace(anchor, replacement);
 }
 media = once(media,
+  '  if (!("mediaSession" in navigator)) return;',
+  '  const nativeBridgeAvailable = (() => { try { return window.VioraAndroid?.isAndroidApp?.() === true && typeof window.VioraNative?.postMessage === "function"; } catch (_) { return false; } })();\n  if (!("mediaSession" in navigator) && !nativeBridgeAvailable) return;',
+  "Android WebView without browser Media Session support");
+media = once(media,
   '  const updateMetadata = (song) => {\n    if (!song) return;',
   '  const isAndroidShell = () => { try { return window.VioraAndroid?.isAndroidApp?.() === true && typeof window.VioraNative?.postMessage === "function"; } catch (_) { return false; } };\n  const nativeActions = new Map();\n  let nativeRequest = 0;\n  const sendNative = (command, fields = {}) => { if (!isAndroidShell()) return; try { window.VioraNative.postMessage(JSON.stringify({ version: 1, requestId: "viora-music-" + (++nativeRequest), command, ...fields })); } catch (_) {} };\n  const publishNative = (song = state.currentSong, playing = state.isPlaying) => { if (!song || song.source === "radio" || state.isStream) return; sendNative("music.update", { title: song.title || "Unknown Title", artist: song.artist || "Unknown Artist", album: song.album || "VIORA", playing: Boolean(playing), duration: Number.isFinite(Number(song.duration)) ? Math.max(0, Math.min(86400000, Number(song.duration) * 1000)) : 0 }); };\n  window.addEventListener("viora-native-music-action", (event) => { const action = event.detail?.action; const handler = nativeActions.get(action); if (handler) handler(action === "seek" ? { seekTime: Number(event.detail?.position || 0) / 1000 } : {}); });\n  const updateMetadata = (song) => {\n    if (!song) return;\n    if (isAndroidShell()) { publishNative(song); return; }',
   "Android native metadata routing");
