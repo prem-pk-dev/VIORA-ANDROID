@@ -345,3 +345,10 @@ Do not route online tracks directly to a second Media3 ExoPlayer as a quick lock
 - [ ] The BrowserStack session is used only after free quota and billing status are confirmed; otherwise use the user's physical device.
 
 This is a recommended next implementation sequence, not a completed feature or an accepted release claim.
+
+
+### New BrowserStack evidence — Samsung Galaxy S23 (23 November 2026)
+
+The user reports that, while a song was playing, swiping down from the top showed the app name **VIORA** but no media control buttons. Treat this as a confirmed negative observation for the ordinary-song notification shade in that test attempt. It is not a radio test and does not prove whether radio's native MediaSession controls work. Track metadata, Android OS version, and exact provider/source were not supplied.
+
+Source inspection narrows the likely integration gap: MainActivity installs RadioBridge only; RadioPlaybackService is the only native Media3 session and owns radio; ordinary online playback is still assigned to WebView AudioEngine.htmlAudio. A launcher/app notification showing the app name is not proof of an active MediaSession. The next implementation must provide a real system-visible session for ordinary music and prove that remote actions are forwarded exactly once to the existing WebView audio owner, without creating a second audio player.
