@@ -111,6 +111,13 @@ try {
   execFileSync(process.execPath, ["--check", path.join(temp, "js/android-driving-voice.js")], { stdio: "pipe" });
   const patched = fs.readFileSync(path.join(temp, "js/expansion.js"), "utf8");
   const css = fs.readFileSync(path.join(temp, "css/expansion.css"), "utf8");
+  const voiceAdapter = fs.readFileSync(path.join(temp, "js/android-driving-voice.js"), "utf8");
+  if (!patched.includes('id="viora-driving-language"') || !patched.includes('vioraDrivingLanguage === "hi-IN"') || !patched.includes('recognition.lang = vioraDrivingLanguage')) {
+    throw new Error("Driving assistant English/Hindi language selector is not wired to SpeechRecognition");
+  }
+  if (!voiceAdapter.includes("window.VioraVoice.startListening") || !voiceAdapter.includes("viora-native-speech-result") || !voiceAdapter.includes("viora-native-speech-error")) {
+    throw new Error("Native Android speech bridge adapter is missing start/result/error wiring");
+  }
   if (!patched.includes("VIORA_ANDROID_DRIVING_ASSISTANT_V1") || !patched.includes("घर खोलो") || !css.includes("viora-driving-assistant")) {
     throw new Error("Driving mode patch output missing expected UI/voice features");
   }
