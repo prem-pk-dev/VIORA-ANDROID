@@ -155,3 +155,13 @@ Next device check, when a free BrowserStack session is safely available or on a 
 3. Repeat separately with a radio station. For the current radio POC, expect play/pause only and no seek/next/previous.
 4. Unlock the device and verify the same item, queue index and playback state remain synchronized.
 5. Keep the test within ₹0; do not start billable BrowserStack minutes or consume an unverified paid quota.
+
+
+### Follow-up notification-shade observation — Samsung Galaxy S23
+
+- [x] While an ordinary song was playing, user swiped down from the top of the screen and saw the app name **VIORA** in the notification shade.
+- [ ] No media transport buttons (Play/Pause, Next/Previous) were visible alongside the app name. This is a confirmed failure of the expected ordinary-track media-control UI for this test attempt.
+- [ ] Track title/artist/artwork visibility and lock-screen presentation were not confirmed.
+- Exact playback source/provider and Android version remain unspecified; do not infer them.
+- This observation is consistent with the current architecture gap: MainActivity installs the radio-only RadioBridge; the only native MediaSessionService is RadioPlaybackService; ordinary online music remains in WebView AudioEngine.htmlAudio. It does not establish that radio controls fail.
+- Next diagnostic: repeat with one ordinary online song and one radio station separately. For each, note whether a media card appears, whether metadata is present, and which controls appear. If radio works but ordinary music does not, isolate the missing ordinary-track system-session integration.
