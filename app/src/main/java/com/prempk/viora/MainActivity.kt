@@ -24,6 +24,7 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
     private var radioBridge: RadioBridge? = null
+    private var voiceBridge: VoiceRecognitionBridge? = null
 
     private val assetLoader by lazy {
         WebViewAssetLoader.Builder()
@@ -47,6 +48,8 @@ class MainActivity : Activity() {
         // Privileged radio commands are exposed only through an origin-scoped WebMessageListener.
         // If the installed WebView lacks this feature, the Android radio adapter remains disabled.
         radioBridge = RadioBridge(this, webView).also { it.install() }
+        voiceBridge = VoiceRecognitionBridge(this, webView)
+        webView.addJavascriptInterface(voiceBridge!!, "VioraVoice")
         webView.setBackgroundColor(Color.rgb(5, 7, 20))
         setContentView(webView)
 
@@ -162,6 +165,12 @@ class MainActivity : Activity() {
             return
         }
         super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    @Deprecated("Deprecated in Android API")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (voiceBridge?.onPermissionResult(requestCode, grantResults) == true) return
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
