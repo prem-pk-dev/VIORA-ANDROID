@@ -74,6 +74,10 @@ class MusicMediaSessionService : Service() {
                     manager.notify(NOTIFICATION_ID, buildNotification(playing))
                 }
             }
+            ACTION_PLAY -> emitAction("play")
+            ACTION_PAUSE -> emitAction("pause")
+            ACTION_NEXT -> emitAction("next")
+            ACTION_PREVIOUS -> emitAction("previous")
             ACTION_STOP -> {
                 if (::session.isInitialized) {
                     session.isActive = false
