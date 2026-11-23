@@ -2,6 +2,7 @@ package com.prempk.viora
 
 import android.app.Notification
 import android.app.NotificationChannel
+import android.app.Notification.MediaStyle
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -13,7 +14,6 @@ import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.media.app.NotificationCompat.MediaStyle
 
 /**
  * System-control proxy for WebView-owned ordinary music.
