@@ -179,7 +179,7 @@ class MusicMediaSessionService : Service() {
         }
 
         fun stop(context: Context) {
-            context.startService(Intent(context, MusicMediaSessionService::class.java).setAction(ACTION_STOP))
+            context.stopService(Intent(context, MusicMediaSessionService::class.java))
         }
     }
 }
