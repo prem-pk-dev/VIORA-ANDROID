@@ -2,6 +2,8 @@ name: Build VIORA Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -64,11 +66,20 @@ jobs:
       - name: Test Android radio patcher against isolated fixture
         run: node scripts/test-android-radio-patch.mjs
 
-      - name: Apply Android-only radio adapter to temporary PWA checkout
+      - name: Test India-first music provider waterfall
+        run: |
+          node --check scripts/india-music-engine.js
+          node --check scripts/patch-android-music.mjs
+          node scripts/test-india-music-engine.mjs
+
+      - name: Apply Android-only radio and India music adapters to temporary PWA checkout
         run: |
           node scripts/patch-android-radio.mjs viora-source
           test -s viora-source/js/android-radio-adapter.js
           test -s viora-source/android-radio-patch-report.json
+          node scripts/patch-android-music.mjs viora-source
+          test -s viora-source/js/india-music-engine.js
+          test -s viora-source/android-india-music-patch-report.json
 
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
@@ -81,6 +92,14 @@ jobs:
           fi
           if ! grep -Rqs "viora-native-radio-mode" dist/assets; then
             echo "::error::Native/Web MediaSession ownership handoff missing from generated PWA bundle."
+            exit 1
+          fi
+          if ! grep -Rqs "VIORA_INDIA_MUSIC_WATERFALL_V1" dist/assets; then
+            echo "::error::India-first music waterfall missing from generated PWA bundle."
+            exit 1
+          fi
+          if ! grep -Rqs "online:jiosaavn:" dist/assets; then
+            echo "::error::Normalized online track identity missing from generated PWA bundle."
             exit 1
           fi
 
