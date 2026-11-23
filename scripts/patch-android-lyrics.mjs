@@ -106,7 +106,7 @@ source = once(source,
 "Block stale lyrics render");
 source = once(source,
 '    state.subscribe("currentSongChanged", (song) => {\n      if (song) {\n        this.currentSongId = song.id;',
-'    state.subscribe("songChanged", (song) => {\n      this.currentSongId = song?.id || null;\n      this.currentLyricsData = null;\n      this.activeLineIndex = -1;\n      if (song) {',
+'    state.subscribe("currentSongChanged", (song) => {\n      this.currentSongId = song?.id || null;\n      this.currentLyricsData = null;\n      this.activeLineIndex = -1;\n      if (song) {',
 "Track actual playback change event");
 fs.writeFileSync(file, source);
 const report = { marker, patchedFile: "js/lyrics.js", guarantees: ["No title-only cache reuse across artists or recordings", "LRCLIB candidates must match title, artist and compatible duration", "Manual lyric selection is validated", "Late response for previous track cannot overwrite current lyrics", "Lyrics service follows songChanged"] };
