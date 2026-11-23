@@ -14,6 +14,10 @@ assert(!source.includes("this.customLyricsCache[cleanTitle.toLowerCase()]"), "Un
 assert(!source.includes("saveCachedLyrics(cleanTitle.toLowerCase()"), "Unsafe title-only cache write remains");
 assert(source.includes("this.lyricsMatchScore(json, song, duration) >= 0"), "Primary API identity validation missing");
 assert(source.includes("this.lyricsMatchScore(candidate, song, duration)"), "Fallback API identity validation missing");
+assert(source.includes("lyricsCacheMatchesSong(cached, song)"), "Cached lyrics must be validated against track identity");
+assert(source.includes("trackIdentity: { trackName: song.title, artistName: song.artist, duration }"), "Fetched lyrics cache identity metadata missing");
+assert(source.includes("if (cachedById && !cachedById.trackIdentity) delete this.customLyricsCache[songId];"), "Legacy unverified cache entries must be invalidated");
+assert(!source.includes("strictDemoTitles"), "Title-only built-in demo lookup remains enabled");
 assert(source.includes('if (!state.currentSong || state.currentSong.id !== songId) return;'), "Stale async lyrics render guard missing");
 assert(source.includes('if (state.currentSong && state.currentSong.id !== songId) return;'), "Stale container render guard missing");
 
