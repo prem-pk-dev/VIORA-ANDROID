@@ -60,6 +60,7 @@ const media = fs.readFileSync(path.join(fixture, "js", "media-session.js"), "utf
 const adapter = fs.readFileSync(path.join(fixture, "js", "android-radio-adapter.js"), "utf8");
 assert.ok(media.includes("VIORA_ANDROID_MUSIC_MEDIA_SESSION_V1"));
 assert.ok(media.includes('sendNative("music.update"'));
+assert.ok(media.includes('if (!("mediaSession" in navigator) && !nativeBridgeAvailable) return;'));
 assert.ok(media.includes('nativeActions.set'));
 assert.ok(media.includes('if (isAndroidShell() || nativeRadioMode) return;'));
 assert.ok(adapter.includes('message.type === "music.action"'));
