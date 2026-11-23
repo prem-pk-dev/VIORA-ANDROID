@@ -23,7 +23,7 @@ assert(source.includes('if (state.currentSong && state.currentSong.id !== songId
 
 const match = source.match(/  lyricsMatchScore\(record, song, expectedDuration = 0\) \{[\s\S]*?\n  \}/);
 assert(match, "Cannot extract lyrics matcher for behavior tests");
-const matcher = new Function("cleanTrackTitle", "cleanArtistName", "return (" + match[0].trim() + ");")(
+const matcher = new Function("cleanTrackTitle", "cleanArtistName", "return ({" + match[0].trim() + "}).lyricsMatchScore;")(
   value => String(value || "").trim(),
   value => String(value || "").trim()
 );
