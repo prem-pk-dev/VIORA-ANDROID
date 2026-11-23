@@ -104,6 +104,8 @@ jobs:
       - name: Apply Android-only radio and India music adapters to temporary PWA checkout
         run: |
           node scripts/patch-android-radio.mjs viora-source
+          node scripts/patch-android-music-session.mjs viora-source
+          test -s viora-source/android-music-media-session-patch-report.json
           test -s viora-source/js/android-radio-adapter.js
           test -s viora-source/android-radio-patch-report.json
           node scripts/patch-android-music.mjs viora-source
@@ -125,6 +127,8 @@ jobs:
           node --check viora-source/js/lyrics.js
           node --check viora-source/js/expansion.js
           node --check viora-source/js/android-driving-voice.js
+          node --check viora-source/js/media-session.js
+          node --check viora-source/js/android-radio-adapter.js
 
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
@@ -133,6 +137,10 @@ jobs:
           npm run build
           if ! grep -Rqs "radio.getSnapshot" dist/assets; then
             echo "::error::Android radio adapter marker missing from generated PWA bundle."
+            exit 1
+          fi
+          if ! grep -Rqs "VIORA_ANDROID_MUSIC_MEDIA_SESSION_V1" dist/assets; then
+            echo "::error::Android native music MediaSession adapter missing from generated PWA bundle."
             exit 1
           fi
           if ! grep -Rqs "viora-native-radio-mode" dist/assets; then
