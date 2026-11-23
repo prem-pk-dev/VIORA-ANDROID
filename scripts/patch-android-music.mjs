@@ -39,12 +39,16 @@ const replacement=`      // VIORA India-first waterfall search: JioSaavn -> Pipe
           const renderCards = (items) => items.forEach(track => {
             const card = document.createElement("div");
             card.style.cssText = "background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;";
-            card.innerHTML = '<div style="width:100%;aspect-ratio:16/9;background:var(--color-bg-surface);overflow:hidden;"><img src="' + (track.artwork || "") + '" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy"></div>' +
-              '<div style="padding:12px;display:flex;flex-direction:column;gap:8px;"><strong style="font-size:.9rem;">' + track.title + '</strong>' +
-              '<span style="font-size:.8rem;color:var(--color-text-muted);">' + track.artist + ' · ' + track.sourceProvider + '</span>' +
+            card.innerHTML = '<div style="width:100%;aspect-ratio:16/9;background:var(--color-bg-surface);overflow:hidden;"><img class="vi-art" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy"></div>' +
+              '<div style="padding:12px;display:flex;flex-direction:column;gap:8px;"><strong class="vi-title" style="font-size:.9rem;"></strong>' +
+              '<span class="vi-meta" style="font-size:.8rem;color:var(--color-text-muted);"></span>' +
               '<div style="display:flex;gap:8px;"><button class="btn-primary vi-play" style="flex:1;justify-content:center;">▶ Play</button>' +
               '<button class="btn-secondary vi-queue">＋ Queue</button><button class="icon-btn vi-fav">' +
               (state.isFavorite(track.id) ? ICONS.heartFilled : ICONS.heart) + '</button></div></div>';
+            const art = card.querySelector(".vi-art");
+            if (/^https:\/\//i.test(String(track.artwork || ""))) art.src = track.artwork;
+            card.querySelector(".vi-title").textContent = track.title || "Unknown track";
+            card.querySelector(".vi-meta").textContent = (track.artist || "Unknown artist") + " · " + (track.sourceProvider || "online");
             const play = () => {
               const index = state.queue.findIndex(x => x.id === track.id);
               if (index >= 0) audioEngine.playTrackAtIndex(index);
@@ -77,7 +81,7 @@ const chips=`        <div id="viora-india-discovery" style="display:flex;flex-di
         </div>
 `;
 ui=once(ui,chipAnchor,chips+chipAnchor,"India language/category chips");
-ui=once(ui,'    renderTags();\n\n    document.getElementById("clear-recent-btn")','    renderTags();\n    let selectedLanguage = "All Indian";\n    let selectedCategory = "";\n    document.querySelectorAll(".vi-language").forEach(btn => btn.addEventListener("click", () => { selectedLanguage = btn.dataset.value; document.querySelectorAll(".vi-language").forEach(x => x.classList.toggle("active", x===btn)); if (input.value.trim()) doSearch(input.value.trim()); }));\n    document.querySelectorAll(".vi-category").forEach(btn => btn.addEventListener("click", () => { selectedCategory = btn.dataset.value; document.querySelectorAll(".vi-category").forEach(x => x.classList.toggle("active", x===btn)); if (input.value.trim()) doSearch(input.value.trim()); }));\n\n    document.getElementById("clear-recent-btn")',"Wire India discovery chips");
+ui=once(ui,'    renderTags();\n\n    document.getElementById("clear-recent-btn")','    renderTags();\n    let selectedLanguage = "All Indian";\n    let selectedCategory = "";\n    document.querySelectorAll(".vi-language").forEach(btn => btn.addEventListener("click", () => { selectedLanguage = btn.dataset.value; document.querySelectorAll(".vi-language").forEach(x => x.classList.toggle("active", x===btn)); doSearch(input.value.trim() || (selectedLanguage === "All Indian" ? "Indian music" : selectedLanguage)); }));\n    document.querySelectorAll(".vi-category").forEach(btn => btn.addEventListener("click", () => { selectedCategory = btn.dataset.value; document.querySelectorAll(".vi-category").forEach(x => x.classList.toggle("active", x===btn)); doSearch(input.value.trim() || selectedCategory); }));\n\n    document.getElementById("clear-recent-btn")',"Wire India discovery chips");
 audio=once(audio,'import { playbackAnalytics } from "./playback-analytics.js";','import { playbackAnalytics } from "./playback-analytics.js";\nimport { indiaMusicEngine } from "./india-music-engine.js";\n// '+marker,"Audio engine import");
 audio=once(audio,'    const song = state.currentSong;\n    const isYouTube = song && this.isYouTubeSong(song);','    const song = state.currentSong;\n    const isYouTube = song && this.isYouTubeSong(song);',"Audio source selector anchor");
 audio=once(audio,'    } else if (song && (song.blobUrl || song.source === "local" || song.isCustom || (song.id && song.id.startsWith("local:")))) {','    } else if (song && song.source === "online" && song.streamUrl) {\n      this.playOnlineTrack(song);\n    } else if (song && (song.blobUrl || song.source === "local" || song.isCustom || (song.id && song.id.startsWith("local:")))) {',"Online audio routing");
