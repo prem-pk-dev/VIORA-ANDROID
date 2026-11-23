@@ -61,7 +61,7 @@ const adapter = fs.readFileSync(path.join(fixture, "js", "android-radio-adapter.
 assert.ok(media.includes("VIORA_ANDROID_MUSIC_MEDIA_SESSION_V1"));
 assert.ok(media.includes('sendNative("music.update"'));
 assert.ok(media.includes('nativeActions.set'));
-assert.ok(media.includes('if (isAndroidShell()) return;'));
+assert.ok(media.includes('if (isAndroidShell() || nativeRadioMode) return;'));
 assert.ok(adapter.includes('message.type === "music.action"'));
 assert.ok(fs.existsSync(path.join(fixture, "android-music-media-session-patch-report.json")));
 const second = spawnSync(process.execPath, [patcher, fixture], { encoding: "utf8" });
