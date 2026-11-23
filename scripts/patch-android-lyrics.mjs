@@ -129,6 +129,6 @@ source = once(source,
 '    state.subscribe("currentSongChanged", (song) => {\n      this.currentSongId = song?.id || null;\n      this.currentLyricsData = null;\n      this.activeLineIndex = -1;\n      if (song) {',
 "Track actual playback change event");
 fs.writeFileSync(file, source);
-const report = { marker, patchedFile: "js/lyrics.js", guarantees: ["No title-only cache reuse across artists or recordings", "LRCLIB candidates must match title, artist and compatible duration", "Manual lyric selection is validated", "Late response for previous track cannot overwrite current lyrics", "Lyrics service follows songChanged"] };
+const report = { marker, patchedFile: "js/lyrics.js", guarantees: ["No title-only cache reuse across artists or recordings", "LRCLIB candidates must match title, artist and compatible duration", "Manual lyric selection is validated", "Late response for previous track cannot overwrite current lyrics", "Lyrics service subscribes to currentSongChanged"] };
 fs.writeFileSync(path.join(root, "android-lyrics-patch-report.json"), JSON.stringify(report, null, 2) + "\n");
 console.log(JSON.stringify(report, null, 2));
