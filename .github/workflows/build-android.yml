@@ -74,6 +74,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Inspect complete driving mode and voice assistant implementation
+        run: node scripts/inspect-viora-driving-mode.mjs viora-source
+
+      - name: Upload driving mode and voice assistant inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: VIORA-driving-mode-inspection
+          path: artifacts/viora-driving-mode-inspection.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Test Android radio patcher against isolated fixture
         run: node scripts/test-android-radio-patch.mjs
 
