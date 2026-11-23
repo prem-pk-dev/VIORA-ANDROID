@@ -50,6 +50,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Audit private PWA search, track model, and branding contracts (read-only)
+        run: node scripts/audit-viora-integration-source.mjs viora-source
+
+      - name: Upload sanitized PWA integration audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: VIORA-integration-source-audit
+          path: artifacts/viora-integration-source-audit.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Test Android radio patcher against isolated fixture
         run: node scripts/test-android-radio-patch.mjs
 
