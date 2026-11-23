@@ -41,7 +41,8 @@ Do not mark the Android build complete until the following checks are performed 
 ## Known limitations before feature-complete sign-off
 
 - [ ] **YouTube pagination:** the Android direct-HTML fallback currently returns `nextPageToken: null`. The unchanged PWA server route behaves the same when `YOUTUBE_API_KEY` is not configured. Do not show a fake continuation token or embed an API key in the APK. Revisit only with a tested continuation implementation or a user-configured secure backend.
-- [ ] **Background playback / native media controls:** not implemented or verified yet. The current Web Audio / HTMLAudio / YouTube IFrame playback engine must remain the single playback engine during any first integration attempt. Do not add a second ExoPlayer/Media3 playback engine beside it; that could desynchronize queue, EQ, visualizer, radio, YouTube and local playback. Any native session/foreground-service bridge must prove lifecycle behavior, command synchronization, audio focus, screen-off playback and process recreation before being accepted.
+- [ ] **Ordinary music lock-screen controls:** the native Media3 service currently owns the live-radio path only. Standard online/local tracks and YouTube remain on their existing WebView/PWA playback paths. Standard-track lock-screen metadata, actions, background continuity and process-recreation behavior have not been confirmed on a real device. Do not describe the radio MediaSession as general music MediaSession support.
+- [ ] **Radio native controls:** source code includes a Media3 `MediaSessionService` and origin-scoped bridge for radio. Build success and source inspection do not prove real-device notification/lock-screen controls, audio focus or headphone behavior; those remain device-test gates.
 - [ ] **Android 15 edge-to-edge:** safe-area inset handling is present in `MainActivity.kt`, but visual verification on Android 15+ is still pending.
 
 ## Android bridge / playback integration gates (before BrowserStack)
@@ -105,7 +106,7 @@ Do not mark the Android build complete until the following checks are performed 
 
 - Current PWA playback routing was rechecked in `js/audio-engine.js`: YouTube IFrame, live radio, and local/custom tracks have explicit playback paths. A generic direct-remote-audio playback path was not found; do not count that as an existing working feature or use it as the first production integration target without a separate product decision.
 - Local audio bytes live in IndexedDB (`MusiqLibraryDB` / `audioBlobs`); the WebView creates temporary Blob URLs for playback. Local metadata in localStorage alone is not enough to restore the audio bytes in a native service.
-- Native playback work remains unimplemented. No Media3 service, native controls, or background-playback behavior is considered tested.
+- The Android repository now contains a scoped Media3 `MediaSessionService` for live radio only. Standard/local music and YouTube remain on their existing WebView paths; their native lock-screen controls and background behavior are not verified.
 
 
 ## Radio POC implementation status — 22 November 2026
@@ -138,3 +139,19 @@ Do not mark any of these items complete based only on source inspection or a suc
 - [ ] Confirm legitimate external MediaSession controllers can still connect and issue only the granted play/pause commands.
 - [ ] Confirm Android media-button/session handling still works after custom-intent authentication is added.
 - [ ] Confirm stopping/clearing radio station preferences does not erase the separate app-private command token.
+
+
+## BrowserStack feedback — Samsung Galaxy S23 — 23 November 2026
+
+User-reported result:
+- [x] Driving Mode layout/design displayed correctly on Samsung Galaxy S23.
+- [ ] Background playback lock-screen media controls could not be confirmed. This is **unverified**, not a pass or a failure.
+- Device OS version and exact playback source used during the lock-screen check were not specified; do not infer either.
+- The result does not establish ordinary music controls or radio controls separately. Test those source types independently before sign-off.
+
+Next device check, when a free BrowserStack session is safely available or on a physical phone:
+1. Play a normal online song (not radio), background the app, lock the screen, and check for title, artist and artwork.
+2. Test Play/Pause and Next/Previous from the lock screen and notification shade; verify the in-app state follows each action.
+3. Repeat separately with a radio station. For the current radio POC, expect play/pause only and no seek/next/previous.
+4. Unlock the device and verify the same item, queue index and playback state remain synchronized.
+5. Keep the test within ₹0; do not start billable BrowserStack minutes or consume an unverified paid quota.
