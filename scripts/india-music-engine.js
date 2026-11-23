@@ -56,7 +56,7 @@ function normalizeAudius(item, host) {
 }
 
 class IndiaMusicEngine {
-  constructor() { this.pipedInstances = null; this.audiusHost = null; }
+  constructor() { this.pipedInstances = null; this.audiusHost = null; this.marker = "VIORA_INDIA_MUSIC_WATERFALL_V1"; }
   async json(url, ms = 5000) {
     const response = await withTimeout(url, { headers: { Accept: "application/json" } }, ms);
     if (!response.ok) throw new Error("HTTP " + response.status);
