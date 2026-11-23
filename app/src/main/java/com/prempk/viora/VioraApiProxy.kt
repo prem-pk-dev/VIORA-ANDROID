@@ -21,6 +21,36 @@ import java.util.Locale
  * LRCLIB and YouTube HTML-fallback paths.
  */
 internal object VioraApiProxy {
+    internal fun lyricsMatchScore(expectedTitle: String, expectedArtist: String, recordTitle: String, recordArtist: String, expectedDuration: Int = 0, recordDuration: Int = 0, hasSyncedLyrics: Boolean = false): Int? {
+        fun tokens(value: String): Set<String> {
+            val normalized = java.text.Normalizer.normalize(value.lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+                .replace(Regex("\\p{Mn}+"), "")
+                .replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim()
+            return normalized.split(Regex("\\s+")).filter { it.length > 1 }.toSet()
+        }
+        val expected = tokens(expectedTitle)
+        val actual = tokens(recordTitle)
+        if (expected.isEmpty() || actual.isEmpty()) return null
+        val overlap = expected.intersect(actual).size.toDouble() / expected.union(actual).size.toDouble()
+        val exact = expected == actual
+        val contains = recordTitle.contains(expectedTitle, true) || expectedTitle.contains(recordTitle, true)
+        val titleScore = when { exact -> 100; contains && overlap >= 0.70 -> 85; overlap >= 0.82 -> 75; overlap >= 0.70 -> 60; else -> return null }
+        var score = titleScore
+        if (expectedArtist.isNotBlank()) {
+            val ea = tokens(expectedArtist); val ra = tokens(recordArtist)
+            if (ea.isEmpty() || ra.isEmpty()) return null
+            val artistOverlap = ea.intersect(ra).size.toDouble() / ea.union(ra).size.toDouble()
+            score += when { ea == ra -> 60; (recordArtist.contains(expectedArtist, true) || expectedArtist.contains(recordArtist, true)) && artistOverlap >= 0.50 -> 45; artistOverlap >= 0.65 -> 35; else -> return null }
+        } else if (overlap < 0.85) return null
+        if (expectedDuration > 0 && recordDuration > 0) {
+            val diff = kotlin.math.abs(expectedDuration - recordDuration)
+            if (diff > 45) return null
+            score += when { diff < 15 -> 20; diff < 35 -> 10; else -> 0 }
+        }
+        if (hasSyncedLyrics) score += 5
+        return score
+    }
+
     private const val ASSET_HOST = "appassets.androidplatform.net"
     private const val USER_AGENT =
         "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
@@ -110,42 +140,23 @@ internal object VioraApiProxy {
                 .put("artist", artist))
         }
 
-        val expectedLanguage = detectLanguage("", title, artist)
         var best: JSONObject? = null
         var bestScore = -1
 
         candidates.forEach { record ->
-            val text = record.optString("syncedLyrics").ifBlank { record.optString("plainLyrics") }
-            if (text.isBlank()) return@forEach
-            var score = 0
-            if (record.optString("syncedLyrics").isNotBlank()) score += 60
-            if (expectedLanguage.name == "Hindi" && Regex("[\\u0900-\\u097F]").containsMatchIn(text)) score += 80
-            if (expectedLanguage.name == "Punjabi" && Regex("[\\u0A00-\\u0A7F]").containsMatchIn(text)) score += 80
-
-            val recordTitle = record.optString("trackName").trim().lowercase(Locale.ROOT)
-            val expectedTitle = title.lowercase(Locale.ROOT)
-            if (recordTitle.isNotBlank() && expectedTitle.isNotBlank()) {
-                if (recordTitle == expectedTitle) score += 40
-                else if (recordTitle.contains(expectedTitle) || expectedTitle.contains(recordTitle)) score += 20
-            }
-
-            val recordArtist = record.optString("artistName").trim().lowercase(Locale.ROOT)
-            val expectedArtist = artist.lowercase(Locale.ROOT)
-            if (recordArtist.isNotBlank() && expectedArtist.isNotBlank() &&
-                (recordArtist.contains(expectedArtist) || expectedArtist.contains(recordArtist))) score += 30
-
-            val recordDuration = record.optDouble("duration", 0.0).toInt()
-            if (duration > 0 && recordDuration > 0) {
-                val diff = kotlin.math.abs(recordDuration - duration)
-                if (diff < 15) score += 25 else if (diff < 35) score += 10
-            }
-
-            if (score > bestScore) {
-                bestScore = score
-                best = record
-            }
+            val lyricsText = record.optString("syncedLyrics").ifBlank { record.optString("plainLyrics") }
+            if (lyricsText.isBlank()) return@forEach
+            val score = lyricsMatchScore(
+                expectedTitle = title,
+                expectedArtist = artist,
+                recordTitle = record.optString("trackName"),
+                recordArtist = record.optString("artistName"),
+                expectedDuration = duration,
+                recordDuration = record.optDouble("duration", 0.0).toInt(),
+                hasSyncedLyrics = record.optString("syncedLyrics").isNotBlank()
+            ) ?: return@forEach
+            if (score > bestScore) { bestScore = score; best = record }
         }
-
         val record = best
         if (record == null) {
             return jsonResponse(200, JSONObject()
