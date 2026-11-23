@@ -314,3 +314,34 @@ This section supersedes the earlier planning-only status above. The first scoped
 - [ ] Only after build/static checks pass, verify BrowserStack's actual free quota and 30-minute policy before starting any session. Do not use paid time, trials or billing.
 
 Current state: code committed; build and runtime verification pending. Maintain the ₹0 budget and preserve the BrowserStack free allowance until the test session is fully prepared.
+
+
+## Standard online-track lock-screen integration — engineering finding (23 November 2026)
+
+The Android-only India music patch changes the generated PWA copy (not the private source repository) to create normalized tracks with `source: "online"` and a provider `streamUrl`. Its `playOnlineTrack()` path assigns that URL to the existing `AudioEngine.htmlAudio` element. That same element is connected to the existing Web Audio graph used for the 10-band EQ, bass/treble, stereo processing, compressor, reverb and analyser/visualizer.
+
+The existing PWA `js/media-session.js` already registers browser Media Session metadata and play/pause/seek/next/previous handlers that call the existing `audioEngine` methods. The Android shell currently does not expose a general native music-session bridge. The Galaxy S23 BrowserStack check did not establish whether the WebView Media Session is surfaced on the lock screen.
+
+### Important constraint
+
+Do not route online tracks directly to a second Media3 ExoPlayer as a quick lock-screen fix. That would bypass the current Web Audio processing graph and risk losing EQ/effects/visualizer behavior, while creating two possible playback owners. The native Media3 service currently remains dedicated to radio.
+
+### Recommended staged approach (proposal; not implemented)
+
+1. First verify whether the existing WebView Media Session appears on Samsung Galaxy S23 for an ordinary online track, with notification and lock-screen metadata/actions. Test ordinary online music separately from radio.
+2. If WebView Media Session is not surfaced reliably, prototype a native Android MediaSession/foreground-notification **control proxy** for WebView-owned online playback. Keep the existing HTMLAudio/Web Audio engine as the only audio owner; send metadata/state from the Android-generated bundle and forward lock-screen actions to the trusted WebView through the origin-scoped WebMessageListener. Do not add privileged commands to the unrestricted `addJavascriptInterface` bridge.
+3. Suppress the competing browser Media Session while the native proxy owns the system controls, and restore it only after the native session has been cleared. Keep the radio Media3 session mutually exclusive with this proxy.
+4. Explicitly document the lifecycle limit: a control proxy can forward commands only while the WebView/app process is alive. It must not be claimed to provide process-death playback recovery. If screen-off continuity fails, a later native-player migration must port and measure the current effects/visualizer chain before it replaces Web Audio.
+5. Add deterministic tests for message validation, metadata/state synchronization, each remote action, session ownership handoff, WebView recreation, and no duplicate audio. Then request one manual APK build; do not auto-dispatch the workflow.
+
+### Device acceptance for the first proxy prototype
+
+- [ ] Ordinary online track shows correct title, artist and artwork in Android notification and lock screen.
+- [ ] Play/Pause and Next/Previous controls call the existing queue/audioEngine methods exactly once.
+- [ ] Seek actions update the same HTMLAudio/Web Audio owner and the in-app progress UI.
+- [ ] Audio continues with screen locked and the app backgrounded; app process recreation is tested and its supported behavior is stated accurately.
+- [ ] Radio continues to use the existing Media3 owner, and switching between radio and ordinary music never overlaps sessions or audio.
+- [ ] EQ, effects and visualizer remain active for online tracks because HTMLAudio remains the source.
+- [ ] The BrowserStack session is used only after free quota and billing status are confirmed; otherwise use the user's physical device.
+
+This is a recommended next implementation sequence, not a completed feature or an accepted release claim.
