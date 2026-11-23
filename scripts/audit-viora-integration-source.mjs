@@ -6,11 +6,11 @@ const root = path.resolve(process.argv[2] || "viora-source");
 if (!fs.existsSync(root)) throw new Error("PWA checkout not found: " + root);
 
 const rules = [
-  ["search-ui", /type\\s*=\\s*["']search["']|placeholder[^\\n]{0,100}search|addEventListener\\s*\\(\\s*["'](?:input|submit|keydown)["']|oninput|onsearch/gi],
-  ["search-api", /fetch\\s*\\(|axios\\.(?:get|post)|/api\\/(?:youtube|search)|youtube\\.com\\/results|search\\/songs|search\\/playlists/gi],
+  ["search-ui", /type\s*=\s*["']search["']|placeholder[^\n]{0,100}search|addEventListener\s*\(\s*["'](?:input|submit|keydown)["']|oninput|onsearch/gi],
+  ["search-api", /fetch\s*\(|axios\.(?:get|post)|\/api\/(?:youtube|search)|youtube\.com\/results|search\/songs|search\/playlists/gi],
   ["youtube-brand", /YouTube Music Play|YouTube Music/gi],
   ["track-model", /youtubeId|videoId|streamUrl|sourceProvider|downloadUrl|perma_url|trackId|duration_ms/gi],
-  ["search-query", /searchQuery|searchTerm|query\\s*=|URLSearchParams|encodeURIComponent|debounce/gi],
+  ["search-query", /searchQuery|searchTerm|query\s*=|URLSearchParams|encodeURIComponent|debounce/gi],
   ["discovery-ui", /Bollywood Hits|Trending India|Romantic|Heartbreak|Lo-Fi|DJ Remix|Bhakti|90s Retro|Desi Hip-Hop|Punjabi|Bhojpuri|Haryanvi|Marathi|Bengali/gi]
 ];
 
@@ -30,7 +30,7 @@ walk(root);
 
 const findings = [];
 for (const file of files) {
-  const lines = fs.readFileSync(file, "utf8").split(/\\r?\\n/);
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   for (let index = 0; index < lines.length; index++) {
     for (const [category, pattern] of rules) {
       pattern.lastIndex = 0;
@@ -51,6 +51,6 @@ const report = {
   findings
 };
 fs.mkdirSync("artifacts", { recursive: true });
-fs.writeFileSync("artifacts/viora-integration-source-audit.json", JSON.stringify(report, null, 2) + "\\n");
+fs.writeFileSync("artifacts/viora-integration-source-audit.json", JSON.stringify(report, null, 2) + "\n");
 console.log("PWA integration source audit: " + files.length + " source files scanned; " + findings.length + " categorized source locations.");
 console.log("Report contains file paths, line numbers and category labels only; no source excerpts or credentials.");
