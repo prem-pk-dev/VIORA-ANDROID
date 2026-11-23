@@ -86,6 +86,12 @@ jobs:
       - name: Test Android radio patcher against isolated fixture
         run: node scripts/test-android-radio-patch.mjs
 
+      - name: Test Android native music media-session patcher
+        run: |
+          node --check scripts/patch-android-music-session.mjs
+          node --check scripts/test-android-music-session-patch.mjs
+          node scripts/test-android-music-session-patch.mjs
+
       - name: Test India-first music provider waterfall
         run: |
           node --check scripts/india-music-engine.js
