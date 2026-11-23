@@ -77,10 +77,6 @@ class MusicMediaSessionService : Service() {
             ACTION_NEXT -> emitAction("next")
             ACTION_PREVIOUS -> emitAction("previous")
             ACTION_STOP -> {
-                if (::session.isInitialized) {
-                    session.isActive = false
-                    session.release()
-                }
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
