@@ -92,6 +92,9 @@ jobs:
         run: |
           node --check scripts/india-music-engine.js
           node --check scripts/patch-android-music.mjs
+          node --check scripts/patch-android-lyrics.mjs
+          node --check scripts/inspect-viora-lyrics-driving.mjs
+          node --check scripts/inspect-viora-driving-mode.mjs
           node scripts/test-india-music-engine.mjs
 
       - name: Apply Android-only radio and India music adapters to temporary PWA checkout
@@ -102,6 +105,8 @@ jobs:
           node scripts/patch-android-music.mjs viora-source
           test -s viora-source/js/india-music-engine.js
           test -s viora-source/android-india-music-patch-report.json
+          node scripts/patch-android-lyrics.mjs viora-source
+          test -s viora-source/android-lyrics-patch-report.json
 
       - name: Validate patched JavaScript syntax
         run: |
@@ -110,6 +115,7 @@ jobs:
           node --check viora-source/js/state.js
           node --check viora-source/js/player.js
           node --check viora-source/js/india-music-engine.js
+          node --check viora-source/js/lyrics.js
 
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
