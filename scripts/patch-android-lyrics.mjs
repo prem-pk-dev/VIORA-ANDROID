@@ -45,9 +45,17 @@ const helper = [
 "    }",
 "    if (record.syncedLyrics) score += 5;",
 "    return score;",
+"  }",
+"  lyricsCacheMatchesSong(cached, song) {",
+"    if (!cached || !cached.trackIdentity || !song) return false;",
+"    return this.lyricsMatchScore(cached.trackIdentity, song, Math.round(song.duration || 0)) >= 0;",
 "  }"
 ].join("\n");
 source = once(source, '  async clientFallbackFetch(cleanTitle, cleanArtist, duration, song) {', helper + '\n\n  async clientFallbackFetch(cleanTitle, cleanArtist, duration, song) {', "lyrics matcher method");
+source = once(source,
+'    if (this.customLyricsCache[songId] && !this.customLyricsCache[songId].notFound && this.customLyricsCache[songId].lines?.length > 0) {\n      return this.customLyricsCache[songId];\n    }',
+'    const cachedById = this.customLyricsCache[songId];\n    if (cachedById && !cachedById.notFound && cachedById.lines?.length > 0 && this.lyricsCacheMatchesSong(cachedById, song)) {\n      return cachedById;\n    }\n    if (cachedById && !cachedById.trackIdentity) delete this.customLyricsCache[songId];',
+"Validate cached lyrics track identity");
 const demoTitleStart = source.indexOf("    const target = cleanTitle.toLowerCase().trim();", source.indexOf("  findMatchingDemoLyrics("));
 const demoTitleEnd = source.indexOf("    return null;", demoTitleStart);
 if (demoTitleStart < 0 || demoTitleEnd < 0) throw new Error("Demo title-only fallback block not found");
@@ -65,6 +73,18 @@ source = once(source,
 '          this.saveCachedLyrics(songId, lyricsData);\n          if (cleanTitle) {\n            this.saveCachedLyrics(cleanTitle.toLowerCase(), lyricsData);\n          }\n          this.refreshAllLyricsContainers(songId);',
 '          this.saveCachedLyrics(songId, lyricsData);\n          this.refreshAllLyricsContainers(songId);',
 "Cache lyrics by unique track ID only");
+source = once(source,
+'          const lyricsData = {\n            hasSynced: Boolean(record.syncedLyrics),',
+'          const lyricsData = {\n            trackIdentity: { trackName: song.title, artistName: song.artist, duration },\n            hasSynced: Boolean(record.syncedLyrics),',
+"Store fetched lyrics track identity");
+source = once(source,
+'      const notFoundData = {\n        notFound: true,',
+'      const notFoundData = {\n        trackIdentity: { trackName: song.title, artistName: song.artist, duration },\n        notFound: true,',
+"Store negative-cache track identity");
+source = once(source,
+'      const lyricsData = {\n        hasSynced: true,',
+'      const lyricsData = {\n        trackIdentity: { trackName: song?.title || "", artistName: song?.artist || "", duration: Math.round(song?.duration || 0) },\n        hasSynced: true,',
+"Store manual lyrics track identity");
 const start = source.indexOf("    for (const q of queries.slice(0, 5)) {", source.indexOf("  async clientFallbackFetch("));
 const end = source.indexOf("\n    return null;\n  }", start);
 if (start < 0 || end < 0) throw new Error("Client fallback search block not found");
