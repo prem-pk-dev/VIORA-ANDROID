@@ -63,6 +63,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Inspect lyrics identity and driving assistant contracts (read-only)
+        run: node scripts/inspect-viora-lyrics-driving.mjs viora-source
+
+      - name: Upload targeted lyrics and driving inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: VIORA-lyrics-driving-inspection
+          path: artifacts/viora-lyrics-driving-inspection.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Test Android radio patcher against isolated fixture
         run: node scripts/test-android-radio-patch.mjs
 
