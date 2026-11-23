@@ -192,6 +192,8 @@ class MainActivity : Activity() {
         pendingFileCallback = null
         radioBridge?.close()
         radioBridge = null
+        voiceBridge?.destroy()
+        voiceBridge = null
         if (::webView.isInitialized) {
             webView.stopLoading()
             webView.destroy()
