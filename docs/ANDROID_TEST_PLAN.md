@@ -1,0 +1,167 @@
+# VIORA Android real-device test plan
+
+Do not mark the Android build complete until the following checks are performed on the user's Android phone.
+
+## Install and startup
+- [ ] Debug APK installs without package/signature errors.
+- [ ] App opens to the original VIORA UI with the same dark theme, typography, navigation, layout, and player shell.
+- [ ] App can restart and reopen the local bundled UI without requiring the PWA website host.
+- [ ] Status bar, navigation bar, keyboard, and safe insets do not cover the UI.
+
+## Routes and UI
+- [ ] Home, Search, Genres & Moods, Radio, Podcasts.
+- [ ] Local Music, All Songs, Albums, Album Detail, Artists, Artist Detail.
+- [ ] Playlists, Playlist Detail, Favorites, Recently Played, Most Played, Offline Downloads.
+- [ ] Synced Lyrics, Equalizer, Visualizer, Listening Analytics, Settings.
+- [ ] Fullscreen player, queue, mobile navigation, video/lyrics panels, modal and toast behavior.
+
+## Playback
+- [ ] Online audio track play/pause/seek/next/previous.
+- [ ] Radio stream playback and station changes.
+- [ ] YouTube search results, embedded video playback, audio/video view switching.
+- [ ] Screen lock and background playback.
+- [ ] Media notification, lock-screen controls, headset buttons, audio focus and interruptions.
+- [ ] Web Audio EQ, bass/treble, stereo, reverb, compressor, analyser and visualizer.
+
+## Local library
+- [ ] Android picker opens from VIORA's existing Add/Import controls.
+- [ ] Single and multiple audio file selection.
+- [ ] ID3 metadata and embedded artwork parsing.
+- [ ] Audio bytes and metadata persist in IndexedDB after app close/reopen.
+- [ ] Local playback works after app restart and offline.
+- [ ] Duplicate detection, remove track, playlist/favorite metadata.
+
+## Online services and offline behavior
+- [ ] LRCLIB exact and fallback lyric search.
+- [ ] YouTube search route returns expected JSON and usable video IDs.
+- [ ] Weather, remote artwork, external images, radio streams, and YouTube iframe need internet.
+- [ ] First online launch populates the service-worker cache.
+- [ ] Cached app UI opens offline; online API requests fail gracefully and recover after reconnect.
+
+## Known limitations before feature-complete sign-off
+
+- [ ] **YouTube pagination:** the Android direct-HTML fallback currently returns `nextPageToken: null`. The unchanged PWA server route behaves the same when `YOUTUBE_API_KEY` is not configured. Do not show a fake continuation token or embed an API key in the APK. Revisit only with a tested continuation implementation or a user-configured secure backend.
+- [ ] **Ordinary music lock-screen controls:** the native Media3 service currently owns the live-radio path only. Standard online/local tracks and YouTube remain on their existing WebView/PWA playback paths. Standard-track lock-screen metadata, actions, background continuity and process-recreation behavior have not been confirmed on a real device. Do not describe the radio MediaSession as general music MediaSession support.
+- [ ] **Radio native controls:** source code includes a Media3 `MediaSessionService` and origin-scoped bridge for radio. Build success and source inspection do not prove real-device notification/lock-screen controls, audio focus or headphone behavior; those remain device-test gates.
+- [ ] **Android 15 edge-to-edge:** safe-area inset handling is present in `MainActivity.kt`, but visual verification on Android 15+ is still pending.
+
+## Android bridge / playback integration gates (before BrowserStack)
+
+- [ ] Source capability is explicit: YouTube stays in WebView; radio is live and non-seekable; existing local Blob playback remains in WebView until persistent URI migration is implemented.
+- [ ] Unknown or unsupported track descriptors fail closed; no guessed `url` field and no silent fallback to a second player.
+- [ ] JS/native command contract is versioned, allow-listed, size-bounded, and rejects untrusted schemes/origins.
+- [ ] Native events update the existing UI without re-triggering playback or duplicating queue mutations.
+- [ ] `prevTrack()` semantics are preserved: radio changes station; regular in-app previous restarts after 3 seconds; lock-screen Media Session previous currently selects the previous queue item.
+- [ ] Queue state (`queue`, `queueIndex`) and `queueChanged` / `songChanged` / `playbackStateChanged` / `timeUpdate` round-trip without loops.
+- [ ] Android-only generated-bundle patch checks fail closed if expected PWA bundle anchors change; original PWA repo remains untouched.
+- [ ] No Media3 implementation is accepted until a genuine supported source type and rollback path are documented.
+
+## Scoped Media3 radio proof-of-concept acceptance
+
+- [ ] Use an existing `state.radioStations` item with its verified station metadata and HTTPS `streamUrl`; no fabricated source or test-only fake track.
+- [ ] Android-native service owns the selected radio stream; WebView `radioAudio` is not started for the same station.
+- [ ] UI station title/artist/artwork and playing/paused state remain synchronized.
+- [ ] Live radio seek is unavailable; no finite duration or fake seek position is displayed.
+- [ ] Native session supports play/pause only for the first spike; next/previous controls remain absent until station-list synchronization is implemented.
+- [ ] YouTube IFrame and local/custom HTMLAudio paths remain unchanged and mutually exclusive with native radio.
+- [ ] Rollback to WebView radio is possible without clearing the local music library or persisted PWA state.
+
+## Android radio bridge protocol tests (before device session)
+
+- [ ] Patch script runs only against the workflow's temporary PWA checkout; source repository remains unchanged.
+- [ ] Script fails on missing/duplicate anchors and is idempotent.
+- [ ] Only the radio branch is adapted; YouTube, local/custom, standard HTMLAudio/Web Audio, EQ and visualizer code remain byte-identical in the generated source outside the intended patch ranges.
+- [ ] WebMessageListener accepts only the exact app origin and main frame.
+- [ ] Reject malformed/oversized JSON, unknown versions/commands/keys, blank IDs, non-HTTPS URLs, URL credentials, oversized metadata and invalid volume values.
+- [ ] Native session advertises play/pause only; seek, previous and next are not exposed for the initial live-radio spike.
+- [ ] Native service continues when Activity/WebView is destroyed; recreated WebView obtains a complete snapshot.
+- [ ] Native errors do not trigger an automatic WebView radio fallback that could create duplicate audio.
+- [ ] Starting YouTube or local/custom audio sends `radio.stop`, confirms the native item/session is cleared, then starts existing PWA playback.
+- [ ] Selecting another radio station switches the single native stream without overlapping the previous one.
+
+## Media3 session command exposure tests
+
+- [ ] The native MediaSession has one ExoPlayer owner and is created/released with the MediaSessionService lifecycle.
+- [ ] Android System UI and Bluetooth/headset controllers can play and pause the live radio stream.
+- [ ] Native session does not expose seek, set-media-item, playlist mutation, next, or previous commands for the first radio POC.
+- [ ] Live stream metadata reports a live item with no fabricated finite duration; artwork failure does not block audio.
+- [ ] Service starts only after a user-initiated radio play command and declares only the required media-playback foreground-service type and permissions.
+- [ ] Service remains independent of Activity/WebView lifecycle and is released cleanly after playback is stopped.
+
+## Native bridge security checks
+
+- [ ] Privileged playback commands are not added to the existing unrestricted `addJavascriptInterface` object.
+- [ ] `WebMessageListener` is restricted to `https://appassets.androidplatform.net`; wildcard rules are forbidden.
+- [ ] Messages from non-main frames, third-party origins, malformed JSON, oversized payloads, unknown versions, commands, source types, and URL schemes are rejected.
+- [ ] If `WEB_MESSAGE_LISTENER` is unsupported by the installed WebView, native command integration fails closed and does not fall back to a privileged JavaScript interface.
+
+## Stability and security
+- [ ] External top-level links open outside the app; embedded YouTube and remote media still work.
+- [ ] No mixed-content or JavaScript bridge security warnings.
+- [ ] App survives rotation, process recreation, and low-memory resume.
+- [ ] No crash or ANR during long playback, large local imports, or route switching.
+
+
+## Additional source-contract note — 22 November 2026
+
+- Current PWA playback routing was rechecked in `js/audio-engine.js`: YouTube IFrame, live radio, and local/custom tracks have explicit playback paths. A generic direct-remote-audio playback path was not found; do not count that as an existing working feature or use it as the first production integration target without a separate product decision.
+- Local audio bytes live in IndexedDB (`MusiqLibraryDB` / `audioBlobs`); the WebView creates temporary Blob URLs for playback. Local metadata in localStorage alone is not enough to restore the audio bytes in a native service.
+- The Android repository now contains a scoped Media3 `MediaSessionService` for live radio only. Standard/local music and YouTube remain on their existing WebView paths; their native lock-screen controls and background behavior are not verified.
+
+
+## Radio POC implementation status — 22 November 2026
+
+The first Android-only Media3 radio POC has now been implemented in source, but it is not yet built or runtime-tested. The earlier checklist remains the acceptance criteria; the following points describe the new code that must now be verified.
+
+- [ ] Workflow fixture test proves the generated PWA patch applies once and rejects a second application.
+- [ ] Workflow applies the patch only inside the temporary PWA checkout and confirms both the radio adapter and Web MediaSession handoff are present in the Vite bundle.
+- [ ] The Android bridge rejects non-main-frame messages, wrong origins, unknown commands/fields, invalid station ID/URL pairs, invalid volume and oversized messages.
+- [ ] Only the 12 current PWA radio station IDs and exact HTTPS stream URLs are accepted.
+- [ ] Native service uses one ExoPlayer and one MediaSession; external session controls are limited to play/pause and read-only metadata/timeline.
+- [ ] Browser/Web MediaSession is suppressed while native radio owns playback, then restored after radio.stopped.
+- [ ] radio.pause retains the current station; radio.stop clears the media item and persistent station state.
+- [ ] WebView-to-native and native-to-WebView ownership transitions do not overlap audio. YouTube/local playback starts only after native stop acknowledgement.
+- [ ] A paused station can be restored after Activity/WebView recreation and after service recreation from app-private station metadata.
+- [ ] Native volume follows the PWA volume/mute state after initial playback and after snapshot restoration.
+- [ ] Audio focus and headphone-unplug handling work on a real Android device.
+- [ ] Notification/lock-screen play-pause controls work; no seek, next or previous actions are exposed for this POC.
+- [ ] All existing YouTube, local/custom, EQ, effects and visualizer paths remain unchanged and functional.
+
+Do not mark any of these items complete based only on source inspection or a successful APK build. BrowserStack must remain unused until the APK is built, static checks pass, and the current free quota/policy is verified. No paid usage or billing.
+
+
+## Exported MediaSession service command-authentication checks — 22 November 2026
+
+- [ ] Confirm internal VIORA `ACTION_PLAY` start intent includes the app-private command token and starts the approved station.
+- [ ] Confirm internal fallback `ACTION_PAUSE`, `ACTION_RESUME`, `ACTION_STOP`, and `ACTION_VOLUME` intents are accepted when the service is not already handling commands in-process.
+- [ ] From a separate test app/ADB shell, send each custom service action without the private token; confirm it does not start playback, resume a saved station, or alter current playback.
+- [ ] Confirm a malformed or incorrect token is rejected.
+- [ ] Confirm legitimate external MediaSession controllers can still connect and issue only the granted play/pause commands.
+- [ ] Confirm Android media-button/session handling still works after custom-intent authentication is added.
+- [ ] Confirm stopping/clearing radio station preferences does not erase the separate app-private command token.
+
+
+## BrowserStack feedback — Samsung Galaxy S23 — 23 November 2026
+
+User-reported result:
+- [x] Driving Mode layout/design displayed correctly on Samsung Galaxy S23.
+- [ ] Background playback lock-screen media controls could not be confirmed. This is **unverified**, not a pass or a failure.
+- Device OS version and exact playback source used during the lock-screen check were not specified; do not infer either.
+- The result does not establish ordinary music controls or radio controls separately. Test those source types independently before sign-off.
+
+Next device check, when a free BrowserStack session is safely available or on a physical phone:
+1. Play a normal online song (not radio), background the app, lock the screen, and check for title, artist and artwork.
+2. Test Play/Pause and Next/Previous from the lock screen and notification shade; verify the in-app state follows each action.
+3. Repeat separately with a radio station. For the current radio POC, expect play/pause only and no seek/next/previous.
+4. Unlock the device and verify the same item, queue index and playback state remain synchronized.
+5. Keep the test within ₹0; do not start billable BrowserStack minutes or consume an unverified paid quota.
+
+
+### Follow-up notification-shade observation — Samsung Galaxy S23
+
+- [x] While an ordinary song was playing, user swiped down from the top of the screen and saw the app name **VIORA** in the notification shade.
+- [ ] No media transport buttons (Play/Pause, Next/Previous) were visible alongside the app name. This is a confirmed failure of the expected ordinary-track media-control UI for this test attempt.
+- [ ] Track title/artist/artwork visibility and lock-screen presentation were not confirmed.
+- Exact playback source/provider and Android version remain unspecified; do not infer them.
+- This observation is consistent with the current architecture gap: MainActivity installs the radio-only RadioBridge; the only native MediaSessionService is RadioPlaybackService; ordinary online music remains in WebView AudioEngine.htmlAudio. It does not establish that radio controls fail.
+- Next diagnostic: repeat with one ordinary online song and one radio station separately. For each, note whether a media card appears, whether metadata is present, and which controls appear. If radio works but ordinary music does not, isolate the missing ordinary-track system-session integration.
