@@ -13,7 +13,8 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/viora_icon"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="VIORA"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
