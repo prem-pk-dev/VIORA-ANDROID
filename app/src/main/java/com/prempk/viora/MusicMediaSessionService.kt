@@ -129,7 +129,7 @@ class MusicMediaSessionService : Service() {
         publishMetadata(null)
         manager.notify(NOTIFICATION_ID, buildNotification(currentPlaying))
         artworkExecutor.execute {
-            val bitmap = downloadArtwork(url)
+            val bitmap = runCatching { downloadArtwork(url) }.getOrNull()
             if (requestId != artworkRequestId.get()) {
                 bitmap?.recycle()
                 return@execute
