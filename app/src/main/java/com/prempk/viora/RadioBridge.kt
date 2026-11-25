@@ -109,8 +109,7 @@ internal class RadioBridge(
                     val duration = request.getLong("duration")
                     val artworkUrl = request.getString("artworkUrl")
                     if (title.isBlank() || title.length > 160 || artist.length > 160 ||
-                        album.length > 160 || duration < 0L || duration > 86_400_000L ||
-                        artworkUrl.length > 2048 || (artworkUrl.isNotBlank() && !artworkUrl.startsWith("https://"))) {
+                        album.length > 160 || duration < 0L || duration > 86_400_000L || artworkUrl.length > 2048) {
                         proxy.postMessage(errorJson(requestId, "INVALID_METADATA").toString())
                         return
                     }
