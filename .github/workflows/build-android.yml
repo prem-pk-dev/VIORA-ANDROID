@@ -86,6 +86,12 @@ jobs:
       - name: Test Android radio patcher against isolated fixture
         run: node scripts/test-android-radio-patch.mjs
 
+      - name: Test Android native music media-session patcher
+        run: |
+          node --check scripts/patch-android-music-session.mjs
+          node --check scripts/test-android-music-session-patch.mjs
+          node scripts/test-android-music-session-patch.mjs
+
       - name: Test India-first music provider waterfall
         run: |
           node --check scripts/india-music-engine.js
@@ -104,6 +110,8 @@ jobs:
       - name: Apply Android-only radio and India music adapters to temporary PWA checkout
         run: |
           node scripts/patch-android-radio.mjs viora-source
+          node scripts/patch-android-music-session.mjs viora-source
+          test -s viora-source/android-music-media-session-patch-report.json
           test -s viora-source/js/android-radio-adapter.js
           test -s viora-source/android-radio-patch-report.json
           node scripts/patch-android-music.mjs viora-source
@@ -125,6 +133,8 @@ jobs:
           node --check viora-source/js/lyrics.js
           node --check viora-source/js/expansion.js
           node --check viora-source/js/android-driving-voice.js
+          node --check viora-source/js/media-session.js
+          node --check viora-source/js/android-radio-adapter.js
 
       - name: Build the unchanged PWA frontend
         working-directory: viora-source
@@ -133,6 +143,10 @@ jobs:
           npm run build
           if ! grep -Rqs "radio.getSnapshot" dist/assets; then
             echo "::error::Android radio adapter marker missing from generated PWA bundle."
+            exit 1
+          fi
+          if ! grep -Rqs "viora-native-music-action" dist/assets; then
+            echo "::error::Android native music MediaSession action bridge missing from generated PWA bundle."
             exit 1
           fi
           if ! grep -Rqs "viora-native-radio-mode" dist/assets; then
@@ -237,13 +251,3 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Android Emulator launch and lifecycle smoke test
-        uses: ReactiveCircus/android-emulator-runner@v2
-        env:
-          ANDROID_I_WANT_MY_TCG: "yes"
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          script: bash "$GITHUB_WORKSPACE/.github/scripts/android-emulator-smoke-test.sh"

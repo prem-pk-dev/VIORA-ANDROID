@@ -13,7 +13,8 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/viora_icon"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="VIORA"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -29,6 +30,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".MusicMediaSessionService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
         <service
             android:name=".RadioPlaybackService"
             android:exported="true"

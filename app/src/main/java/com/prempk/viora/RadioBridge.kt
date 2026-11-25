@@ -41,12 +41,16 @@ internal class RadioBridge(
                 replyProxy = null
             }
         }
+        MusicMediaSessionState.eventSink = { payload ->
+            try { replyProxy?.postMessage(payload) } catch (_: Exception) { replyProxy = null }
+        }
         return true
     }
 
     fun close() {
         replyProxy = null
         RadioPlaybackState.eventSink = null
+        MusicMediaSessionState.eventSink = null
     }
 
     private fun handleMessage(raw: String, proxy: JavaScriptReplyProxy) {
@@ -76,6 +80,9 @@ internal class RadioBridge(
             "radio.pause", "radio.resume", "radio.stop", "radio.getSnapshot" ->
                 setOf("version", "requestId", "command")
             "radio.setVolume" -> setOf("version", "requestId", "command", "volume")
+            "music.update" -> setOf("version", "requestId", "command", "title", "artist", "album", "playing", "duration", "artworkUrl")
+            "music.state" -> setOf("version", "requestId", "command", "playing")
+            "music.stop" -> setOf("version", "requestId", "command")
             else -> {
                 proxy.postMessage(errorJson(requestId, "UNKNOWN_COMMAND").toString())
                 return
@@ -90,6 +97,32 @@ internal class RadioBridge(
         try {
             RadioPlaybackService.restoreSnapshot(context)
             when (command) {
+                "music.update" -> {
+                    if (RadioPlaybackState.stationId.isNotBlank()) {
+                        proxy.postMessage(errorJson(requestId, "RADIO_OWNS_PLAYBACK").toString())
+                        return
+                    }
+                    val title = request.getString("title")
+                    val artist = request.getString("artist")
+                    val album = request.getString("album")
+                    val playing = request.getBoolean("playing")
+                    val duration = request.getLong("duration")
+                    val artworkUrl = request.getString("artworkUrl")
+                    if (title.isBlank() || title.length > 160 || artist.length > 160 ||
+                        album.length > 160 || duration < 0L || duration > 86_400_000L || artworkUrl.length > 2048) {
+                        proxy.postMessage(errorJson(requestId, "INVALID_METADATA").toString())
+                        return
+                    }
+                    MusicMediaSessionService.update(context, title, artist, album, playing, duration, artworkUrl)
+                }
+                "music.state" -> {
+                    if (RadioPlaybackState.stationId.isNotBlank()) {
+                        proxy.postMessage(errorJson(requestId, "RADIO_OWNS_PLAYBACK").toString())
+                        return
+                    }
+                    MusicMediaSessionService.state(context, request.getBoolean("playing"))
+                }
+                "music.stop" -> MusicMediaSessionService.stop(context)
                 "radio.play" -> {
                     val stationId = request.getString("stationId")
                     val streamUrl = request.getString("streamUrl")
@@ -107,6 +140,8 @@ internal class RadioBridge(
                     }
                     // Mark the requested owner before dispatch so an immediate source switch
                     // queues radio.stop behind radio.play even while the service is starting.
+                    // The radio Media3 session and ordinary WebAudio control proxy are exclusive.
+                    MusicMediaSessionService.stop(context)
                     RadioPlaybackState.stationId = stationId
                     RadioPlaybackState.title = title
                     RadioPlaybackState.artist = artist

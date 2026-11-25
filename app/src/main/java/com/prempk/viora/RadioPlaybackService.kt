@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
@@ -72,7 +73,8 @@ class RadioPlaybackService : MediaSessionService() {
             }
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                RadioPlaybackState.errorCode = "STREAM_ERROR"
+                Log.e(TAG, "Radio stream playback failed: ${error.errorCodeName}", error)
+                RadioPlaybackState.errorCode = error.errorCodeName.take(48).ifBlank { "STREAM_ERROR" }
                 RadioPlaybackState.isPlaying = false
                 publishState()
             }
@@ -236,10 +238,18 @@ class RadioPlaybackService : MediaSessionService() {
         RadioPlaybackState.isBuffering = true
         RadioPlaybackState.isPlaying = false
         saveStation(stationId, streamUrl, title, artist, artwork, bitrate)
-        player.setMediaItem(createMediaItem(stationId, streamUrl, title, artist, artwork))
-        player.prepare()
-        player.play()
-        publishState()
+        try {
+            player.setMediaItem(createMediaItem(stationId, streamUrl, title, artist, artwork))
+            player.prepare()
+            player.play()
+            publishState()
+        } catch (error: Exception) {
+            Log.e(TAG, "Radio service could not start station $stationId", error)
+            RadioPlaybackState.isPlaying = false
+            RadioPlaybackState.isBuffering = false
+            RadioPlaybackState.errorCode = "RADIO_START_FAILED"
+            publishState()
+        }
     }
 
     private fun stopAndClear() {
@@ -293,6 +303,9 @@ class RadioPlaybackService : MediaSessionService() {
         const val EXTRA_BITRATE = "bitrate"
         const val EXTRA_VOLUME = "volume"
 
+        private const val TAG = "VIORA-Radio"
+        private const val RADIO_CHANNEL_ID = "viora_radio_playback"
+        private const val RADIO_NOTIFICATION_ID = 7313
         private const val PREFS_NAME = "viora_native_radio"
         private const val COMMAND_PREFS_NAME = "viora_internal_commands"
         private const val COMMAND_TOKEN_KEY = "commandToken"

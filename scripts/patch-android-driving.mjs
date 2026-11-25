@@ -168,6 +168,8 @@ css += `
 .viora-driving-note { max-width:480px; margin:0 auto; text-align:center; color:rgba(255,255,255,.42) !important; font-size:.68rem !important; }
 @media(max-height:720px) { .viora-driving-overlay { gap:14px !important; } .viora-driving-art { width:min(38vw,150px) !important; } .viora-driving-controls button { width:66px; height:66px; } .viora-driving-controls .viora-driving-main { width:82px; height:82px; } }
 `;
+css = css.replace(/\\n\.viora-driving-language/g, "\n.viora-driving-language");
+css += "\n/* Static player gradients; progress values can still update. */\n.player-progress, .progress-bar, .progress-fill, .player-progress-bar, [class*=\"progress-fill\"], [class*=\"progress-gradient\"], .play-btn, .player-play-btn, .play-pause-btn, [class*=\"play-button-gradient\"], [class*=\"play-btn\"] { animation:none !important; background-position:50% 50% !important; }\n";
 fs.writeFileSync(cssPath, css);
 const report = { marker, files:["js/expansion.js","js/android-driving-voice.js","css/expansion.css"], features:["native Android SpeechRecognizer polyfill for WebView","runtime microphone permission requested only when user starts voice control","English and Hindi playback/navigation commands","track artwork and playback state synchronized","large high-contrast driving controls and assistant panel"] };
 fs.writeFileSync(path.join(root,"android-driving-patch-report.json"),JSON.stringify(report,null,2)+"\n");
