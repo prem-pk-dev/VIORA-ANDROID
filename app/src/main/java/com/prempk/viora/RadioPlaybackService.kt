@@ -13,7 +13,6 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.DefaultMediaNotificationProvider
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.UUID
@@ -25,13 +24,6 @@ class RadioPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        setMediaNotificationProvider(
-            DefaultMediaNotificationProvider.Builder(this)
-                .setChannelId(RADIO_CHANNEL_ID)
-                .setChannelName(R.string.radio_playback_channel)
-                .setNotificationId(RADIO_NOTIFICATION_ID)
-                .build()
-        )
         // Let ExoPlayer manage Android audio focus and pause on headphone disconnect.
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(AudioAttributes.DEFAULT, true)
