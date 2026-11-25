@@ -8,11 +8,18 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * System-control proxy for WebView-owned ordinary music.
@@ -21,6 +28,16 @@ import android.os.IBinder
 class MusicMediaSessionService : Service() {
     private lateinit var session: MediaSession
     private lateinit var manager: NotificationManager
+    private val artworkExecutor = Executors.newSingleThreadExecutor()
+    private val artworkRequestId = AtomicInteger(0)
+    @Volatile private var artworkBitmap: Bitmap? = null
+    @Volatile private var currentArtworkUrl = ""
+    @Volatile private var artworkLoading = false
+    private var currentTitle = "VIORA"
+    private var currentArtist = ""
+    private var currentAlbum = ""
+    private var currentDuration = 0L
+    private var currentPlaying = false
 
     override fun onCreate() {
         super.onCreate()
@@ -49,34 +66,22 @@ class MusicMediaSessionService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_UPDATE -> {
-                val title = intent.getStringExtra(EXTRA_TITLE).orEmpty().take(160)
-                val artist = intent.getStringExtra(EXTRA_ARTIST).orEmpty().take(160)
-                val album = intent.getStringExtra(EXTRA_ALBUM).orEmpty().take(160)
-                val playing = intent.getBooleanExtra(EXTRA_PLAYING, false)
-                val duration = intent.getLongExtra(EXTRA_DURATION, 0L).coerceAtLeast(0L)
+                currentTitle = intent.getStringExtra(EXTRA_TITLE).orEmpty().take(160).ifBlank { "VIORA" }
+                currentArtist = intent.getStringExtra(EXTRA_ARTIST).orEmpty().take(160)
+                currentAlbum = intent.getStringExtra(EXTRA_ALBUM).orEmpty().take(160)
+                currentPlaying = intent.getBooleanExtra(EXTRA_PLAYING, false)
+                currentDuration = intent.getLongExtra(EXTRA_DURATION, 0L).coerceIn(0L, 86400000L)
                 val artworkUrl = intent.getStringExtra(EXTRA_ARTWORK_URL).orEmpty().take(2048)
-                session.setMetadata(
-                    MediaMetadata.Builder()
-                        .putString(MediaMetadata.METADATA_KEY_TITLE, title.ifBlank { "VIORA" })
-                        .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
-                        .putString(MediaMetadata.METADATA_KEY_ALBUM, album)
-                        .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
-                        .apply {
-                            if (artworkUrl.startsWith("https://")) {
-                                putString(MediaMetadata.METADATA_KEY_ART_URI, artworkUrl)
-                                putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, artworkUrl)
-                            }
-                        }
-                        .build()
-                )
-                publishPlaybackState(playing)
-                startForeground(NOTIFICATION_ID, buildNotification(playing))
+                publishMetadata()
+                publishPlaybackState(currentPlaying)
+                startForeground(NOTIFICATION_ID, buildNotification(currentPlaying))
+                requestArtwork(artworkUrl)
             }
             ACTION_STATE -> {
-                val playing = intent.getBooleanExtra(EXTRA_PLAYING, false)
-                publishPlaybackState(playing)
+                currentPlaying = intent.getBooleanExtra(EXTRA_PLAYING, false)
+                publishPlaybackState(currentPlaying)
                 if (::session.isInitialized && session.isActive) {
-                    manager.notify(NOTIFICATION_ID, buildNotification(playing))
+                    manager.notify(NOTIFICATION_ID, buildNotification(currentPlaying))
                 }
             }
             ACTION_PLAY -> emitAction("play")
@@ -89,6 +94,105 @@ class MusicMediaSessionService : Service() {
             }
         }
         return START_NOT_STICKY
+    }
+
+    private fun publishMetadata(bitmap: Bitmap? = artworkBitmap) {
+        val builder = MediaMetadata.Builder()
+            .putString(MediaMetadata.METADATA_KEY_TITLE, currentTitle)
+            .putString(MediaMetadata.METADATA_KEY_ARTIST, currentArtist)
+            .putString(MediaMetadata.METADATA_KEY_ALBUM, currentAlbum)
+            .putLong(MediaMetadata.METADATA_KEY_DURATION, currentDuration)
+        if (bitmap != null && !bitmap.isRecycled) {
+            builder.putBitmap(MediaMetadata.METADATA_KEY_ART, bitmap)
+            builder.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap)
+        }
+        session.setMetadata(builder.build())
+    }
+
+    private fun requestArtwork(url: String) {
+        if (!url.startsWith("https://")) {
+            if (currentArtworkUrl.isNotEmpty()) {
+                currentArtworkUrl = ""
+                artworkRequestId.incrementAndGet()
+                artworkBitmap = null
+                artworkLoading = false
+                publishMetadata(null)
+                manager.notify(NOTIFICATION_ID, buildNotification(currentPlaying))
+            }
+            return
+        }
+        if (url == currentArtworkUrl && (artworkBitmap != null || artworkLoading)) return
+        currentArtworkUrl = url
+        artworkBitmap = null
+        artworkLoading = true
+        val requestId = artworkRequestId.incrementAndGet()
+        publishMetadata(null)
+        manager.notify(NOTIFICATION_ID, buildNotification(currentPlaying))
+        artworkExecutor.execute {
+            val bitmap = downloadArtwork(url)
+            if (requestId != artworkRequestId.get()) {
+                bitmap?.recycle()
+                return@execute
+            }
+            artworkLoading = false
+            artworkBitmap = bitmap
+            if (bitmap != null && !bitmap.isRecycled && ::session.isInitialized) {
+                publishMetadata(bitmap)
+                manager.notify(NOTIFICATION_ID, buildNotification(currentPlaying))
+            }
+        }
+    }
+
+    private fun downloadArtwork(source: String): Bitmap? {
+        var current = URL(source)
+        var redirects = 0
+        while (redirects <= 3) {
+            if (current.protocol != "https") return null
+            val connection = (current.openConnection() as? HttpURLConnection) ?: return null
+            connection.connectTimeout = 5000
+            connection.readTimeout = 7000
+            connection.instanceFollowRedirects = false
+            connection.setRequestProperty("Accept", "image/*")
+            try {
+                val status = connection.responseCode
+                if (status in listOf(301, 302, 303, 307, 308)) {
+                    val location = connection.getHeaderField("Location") ?: return null
+                    current = URL(current, location)
+                    redirects++
+                    continue
+                }
+                if (status != HttpURLConnection.HTTP_OK) return null
+                val declaredLength = connection.contentLengthLong
+                if (declaredLength > MAX_ARTWORK_BYTES) return null
+                val bytes = connection.inputStream.use { input ->
+                    val output = ByteArrayOutputStream()
+                    val buffer = ByteArray(8192)
+                    var total = 0
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        if (total > MAX_ARTWORK_BYTES) return null
+                        output.write(buffer, 0, count)
+                    }
+                    output.toByteArray()
+                }
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+                val options = BitmapFactory.Options()
+                var sample = 1
+                while (bounds.outWidth / sample > MAX_ARTWORK_EDGE ||
+                    bounds.outHeight / sample > MAX_ARTWORK_EDGE) {
+                    sample *= 2
+                }
+                options.inSampleSize = sample
+                return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            } finally {
+                connection.disconnect()
+            }
+        }
+        return null
     }
 
     private fun publishPlaybackState(playing: Boolean) {
@@ -114,8 +218,8 @@ class MusicMediaSessionService : Service() {
         val next = actionIntent(ACTION_NEXT, 13)
         val builder = Notification.Builder(this)
             .setSmallIcon(R.drawable.viora_icon)
-            .setContentTitle(session.controller.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "VIORA")
-            .setContentText(session.controller.metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: "Music playback")
+            .setContentTitle(currentTitle)
+            .setContentText(currentArtist.ifBlank { "Music playback" })
             .setContentIntent(openApp)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOnlyAlertOnce(true)
@@ -127,6 +231,7 @@ class MusicMediaSessionService : Service() {
             ).build())
             .addAction(Notification.Action.Builder(android.R.drawable.ic_media_next, "Next", next).build())
             .setStyle(MediaStyle().setMediaSession(session.sessionToken).setShowActionsInCompactView(0, 1, 2))
+        artworkBitmap?.takeIf { !it.isRecycled }?.let { builder.setLargeIcon(it) }
         if (Build.VERSION.SDK_INT >= 26) builder.setChannelId(CHANNEL_ID)
         return builder.build()
     }
@@ -142,6 +247,9 @@ class MusicMediaSessionService : Service() {
     }
 
     override fun onDestroy() {
+        artworkRequestId.incrementAndGet()
+        artworkExecutor.shutdownNow()
+        artworkBitmap = null
         if (::session.isInitialized) {
             session.isActive = false
             session.release()
@@ -154,6 +262,8 @@ class MusicMediaSessionService : Service() {
     companion object {
         private const val CHANNEL_ID = "viora_music_playback"
         private const val NOTIFICATION_ID = 7312
+        private const val MAX_ARTWORK_BYTES = 4 * 1024 * 1024
+        private const val MAX_ARTWORK_EDGE = 512
         const val ACTION_UPDATE = "com.prempk.viora.music.UPDATE"
         const val ACTION_STATE = "com.prempk.viora.music.STATE"
         const val ACTION_STOP = "com.prempk.viora.music.STOP"
