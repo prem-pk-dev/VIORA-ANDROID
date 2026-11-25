@@ -73,4 +73,5 @@ assert.ok(fs.existsSync(path.join(fixture, "android-music-media-session-patch-re
 const second = spawnSync(process.execPath, [patcher, fixture], { encoding: "utf8" });
 assert.notEqual(second.status, 0, "patcher must reject duplicate application");
 fs.rmSync(root, { recursive: true, force: true });
-console.log("PASS: native music session patch applies once and routes metadata/actions.");
+if (!patched.includes("artworkUrl: song.artwork")) throw new Error("Native MediaSession artwork URL is not published");
+console.log("PASS: native music session patch applies once and routes metadata/actions/artwork.");
