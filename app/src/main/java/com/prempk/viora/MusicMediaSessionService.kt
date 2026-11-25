@@ -54,12 +54,19 @@ class MusicMediaSessionService : Service() {
                 val album = intent.getStringExtra(EXTRA_ALBUM).orEmpty().take(160)
                 val playing = intent.getBooleanExtra(EXTRA_PLAYING, false)
                 val duration = intent.getLongExtra(EXTRA_DURATION, 0L).coerceAtLeast(0L)
+                val artworkUrl = intent.getStringExtra(EXTRA_ARTWORK_URL).orEmpty().take(2048)
                 session.setMetadata(
                     MediaMetadata.Builder()
                         .putString(MediaMetadata.METADATA_KEY_TITLE, title.ifBlank { "VIORA" })
                         .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
                         .putString(MediaMetadata.METADATA_KEY_ALBUM, album)
                         .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
+                        .apply {
+                            if (artworkUrl.startsWith("https://")) {
+                                putString(MediaMetadata.METADATA_KEY_ART_URI, artworkUrl)
+                                putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, artworkUrl)
+                            }
+                        }
                         .build()
                 )
                 publishPlaybackState(playing)
@@ -159,11 +166,12 @@ class MusicMediaSessionService : Service() {
         const val EXTRA_ALBUM = "album"
         const val EXTRA_PLAYING = "playing"
         const val EXTRA_DURATION = "duration"
+        const val EXTRA_ARTWORK_URL = "artworkUrl"
 
-        fun update(context: Context, title: String, artist: String, album: String, playing: Boolean, duration: Long) {
+        fun update(context: Context, title: String, artist: String, album: String, playing: Boolean, duration: Long, artworkUrl: String) {
             val intent = Intent(context, MusicMediaSessionService::class.java).setAction(ACTION_UPDATE)
                 .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_ARTIST, artist).putExtra(EXTRA_ALBUM, album)
-                .putExtra(EXTRA_PLAYING, playing).putExtra(EXTRA_DURATION, duration)
+                .putExtra(EXTRA_PLAYING, playing).putExtra(EXTRA_DURATION, duration).putExtra(EXTRA_ARTWORK_URL, artworkUrl)
             if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent) else context.startService(intent)
         }
 

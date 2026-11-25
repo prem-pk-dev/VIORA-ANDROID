@@ -121,7 +121,7 @@ try {
   if (!patched.includes("VIORA_ANDROID_DRIVING_ASSISTANT_V1") || !patched.includes("घर खोलो") || !css.includes("viora-driving-assistant")) {
     throw new Error("Driving mode patch output missing expected UI/voice features");
   }
-  console.log("PASS: driving mode UI, Android speech adapter, Hindi commands and CSS patch fixture");
+  if (!css.includes("height:100dvh") || !css.includes("overflow:hidden") || !css.includes("grid-template-rows") || !css.includes("animation:none")) throw new Error("Driving mode must fit one viewport and keep player gradients static");\n  console.log("PASS: driving mode one-screen layout, static player gradients, Android speech adapter, Hindi commands and CSS patch fixture");
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }
